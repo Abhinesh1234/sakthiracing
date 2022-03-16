@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Bcategory;
-use App\Language;
-use App\Megamenu;
+use App\Models\Bcategory;
+use App\Models\Language;
+use Auth;
 use Validator;
 use Session;
 
@@ -17,7 +17,7 @@ class BcategoryController extends Controller
         $lang = Language::where('code', $request->language)->first();
 
         $lang_id = $lang->id;
-        $data['bcategorys'] = Bcategory::where('language_id', $lang_id)->orderBy('id', 'DESC')->paginate(10);
+        $data['bcategorys'] = Bcategory::where('language_id', $lang_id)->orderBy('id', 'DESC')->get();
 
         $data['lang_id'] = $lang_id;
 
@@ -52,7 +52,6 @@ class BcategoryController extends Controller
         $bcategory = new Bcategory;
         $bcategory->language_id = $request->language_id;
         $bcategory->name = $request->name;
-        $bcategory->slug = slug_create($request->name);
         $bcategory->status = $request->status;
         $bcategory->serial_number = $request->serial_number;
         $bcategory->save();
@@ -77,7 +76,6 @@ class BcategoryController extends Controller
 
         $bcategory = Bcategory::findOrFail($request->bcategory_id);
         $bcategory->name = $request->name;
-        $bcategory->slug = slug_create($request->name);
         $bcategory->status = $request->status;
         $bcategory->serial_number = $request->serial_number;
         $bcategory->save();
@@ -86,31 +84,13 @@ class BcategoryController extends Controller
         return "success";
     }
 
-    public function deleteFromMegaMenu($bcategory) {
-        $megamenu = Megamenu::where('language_id', $bcategory->language_id)->where('category', 1)->where('type', 'blogs');
-        if ($megamenu->count() > 0) {
-            $megamenu = $megamenu->first();
-            $menus = json_decode($megamenu->menus, true);
-            $catId = $bcategory->id;
-            if (is_array($menus) && array_key_exists("$catId", $menus)) {
-                unset($menus["$catId"]);
-                $megamenu->menus = json_encode($menus);
-                $megamenu->save();
-            }
-        }
-    }
-
     public function delete(Request $request)
     {
-
-        $bcategory = Bcategory::findOrFail($request->bcategory_id);
+        $bcategory = Bcategory::where('id', $request->bcategory_id)->firstOrFail();
         if ($bcategory->blogs()->count() > 0) {
             Session::flash('warning', 'First, delete all the blogs under this category!');
             return back();
         }
-
-        $this->deleteFromMegaMenu($bcategory);
-
         $bcategory->delete();
 
         Session::flash('success', 'Blog category deleted successfully!');
@@ -122,7 +102,7 @@ class BcategoryController extends Controller
         $ids = $request->ids;
 
         foreach ($ids as $id) {
-            $bcategory = Bcategory::findOrFail($id);
+            $bcategory = Bcategory::where('id', $id)->firstOrFail();
             if ($bcategory->blogs()->count() > 0) {
                 Session::flash('warning', 'First, delete all the blogs under the selected categories!');
                 return "success";
@@ -131,7 +111,6 @@ class BcategoryController extends Controller
 
         foreach ($ids as $id) {
             $bcategory = Bcategory::findOrFail($id);
-            $this->deleteFromMegaMenu($bcategory);
             $bcategory->delete();
         }
 

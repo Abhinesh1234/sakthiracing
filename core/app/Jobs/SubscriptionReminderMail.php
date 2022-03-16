@@ -2,34 +2,34 @@
 
 namespace App\Jobs;
 
-use App\Http\Helpers\KreativMailer;
+use App\Http\Helpers\MegaMailer;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Carbon\Carbon;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 
 class SubscriptionReminderMail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $as;
-    public $be;
+    public $user;
     public $bs;
-    public $bex;
+    public $be;
+    public $exDate;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($be, $bex, $bs, $as)
+    public function __construct($user, $bs, $be, $exDate)
     {
-        $this->be = $be;
-        $this->bex = $bex;
+        $this->user = $user;
         $this->bs = $bs;
-        $this->as = $as;
+        $this->be = $be;
+        $this->exDate = $exDate;
     }
 
     /**
@@ -39,25 +39,18 @@ class SubscriptionReminderMail implements ShouldQueue
      */
     public function handle()
     {
-        $be = $this->be;
-        $bex = $this->bex;
-        $bs = $this->bs;
-        $as = $this->as;
 
-        // Send Mail to Buyer
-        $mailer = new KreativMailer;
+        $mailer = new MegaMailer();
         $data = [
-            'toMail' => $as->email,
-            'toName' => $as->name,
-            'customer_name' => $as->name,
-            'remaining_days' => $bex->expiration_reminder,
-            'current_package_name' => $as->current_package->title,
-            'expire_date' => Carbon::parse($as->expire_date)->toFormattedDateString(),
-            'website_title' => $bs->website_title,
-            'templateType' => 'subscription_expiry_reminder',
-            'type' => 'subscriptionExpiryReminder'
+            'toMail' => $this->user->email,
+            'toName' => $this->user->first_name,
+            'username' => $this->user->username,
+            'last_day_of_membership' => Carbon::parse($this->exDate)->toFormattedDateString(),
+            'login_link' => "<a href='" . route('user.login') . "'>" . route('user.login') . "</a>",
+            'website_title' => $this->bs->website_title,
+            'templateType' => 'membership_expiry_reminder',
+            'type' => 'membershipExpiryReminder'
         ];
-
         $mailer->mailFromAdmin($data);
     }
 }

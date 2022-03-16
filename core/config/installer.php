@@ -28,10 +28,11 @@ return [
             'tokenizer',
             'JSON',
             'cURL',
+            'fileinfo',
+            'exif',
+            'gmp',
+            'imagick'
         ],
-        // 'apache' => [
-        //     'mod_rewrite',
-        // ],
     ],
 
     /*
@@ -46,15 +47,7 @@ return [
     'permissions' => [
         'storage/framework/'     => '775',
         'storage/logs/'          => '775',
-        'bootstrap/cache/'       => '775',
-        '../assets/admin/img/'    => '775',
-        '../assets/front/img/'    => '775',
-        '../assets/front/invoices/'    => '775',
-        '../assets/front/receipt/'    => '775',
-        '../assets/front/temp/'    => '775',
-        '../assets/front/user-suppor-file/'    => '775',
-        '../assets/sitemaps/'    => '775',
-        '../assets/user/img/'    => '775',
+        'bootstrap/cache/'       => '775'
     ],
 
     /*

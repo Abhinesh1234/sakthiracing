@@ -3,20 +3,17 @@
 namespace App\Http\Controllers\User;
 
 
-use App\User;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
-use App\Language;
-use App\BasicSetting;
+use App\Models\Language;
 use Validator;
 use Mail;
 use Session;
 use DB;
 use App;
-use App\BasicExtra;
 use Str;
 
 
@@ -25,35 +22,15 @@ class ForgotController extends Controller
 
     public function __construct()
     {
-        $this->middleware('guest');
+        $this->middleware('web');
+        $this->middleware('setlang');
     }
 
 
     public function showForgotForm()
     {
-        $bex = BasicExtra::first();
 
-        if ($bex->is_user_panel == 0) {
-            return back();
-        }
-
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        return view('front.forgot', $data);
-
+        return view('user.forgot');
     }
 
     public function forgot(Request $request)
@@ -76,17 +53,17 @@ class ForgotController extends Controller
             $admin = User::where('email', '=', $request->email)->firstOrFail();
             $autopass = Str::random(8);
             $input['password'] = bcrypt($autopass);
+
             $admin->update($input);
             $subject = __("Reset Password Request");
             $msg = __("Your New Password is : ") . $autopass;
 
             $mail = new PHPMailer(true);
 
-
+            $be->is_smtp = 0;
             if ($be->is_smtp == 1) {
                 try {
                     //Server settings
-                    // $mail->SMTPDebug = SMTP::DEBUG_SERVER;                      // Enable verbose debug output
                     $mail->isSMTP();                                            // Send using SMTP
                     $mail->Host       = $be->smtp_host;                    // Set the SMTP server to send through
                     $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
@@ -99,16 +76,12 @@ class ForgotController extends Controller
                     $mail->setFrom($be->from_mail, $be->from_name);
                     $mail->addAddress($request->email);     // Add a recipient
 
-                    // Add attachments
-
                     // Content
                     $mail->isHTML(true);
                     $mail->Subject =  $subject;
                     $mail->Body    = $msg;
                     $mail->send();
-                } catch (Exception $e) {
-                    die($e->getMessage());
-                }
+                } catch (Exception $e) { }
             } else {
                 try {
                     //Recipients

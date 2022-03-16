@@ -1,6 +1,6 @@
 <div class="main-header">
   <!-- Logo Header -->
-  <div class="logo-header" data-background-color="dark2">
+  <div class="logo-header" @if(request()->cookie('admin-theme') == 'dark') data-background-color="dark2" @endif>
 
     <a href="{{route('front.index')}}" class="logo" target="_blank">
       <img src="{{asset('assets/front/img/'.$bs->logo)}}" alt="navbar brand" class="navbar-brand" width="120">
@@ -12,7 +12,7 @@
     </button>
     <button class="topbar-toggler more"><i class="icon-options-vertical"></i></button>
     <div class="nav-toggle">
-      <button class="btn btn-toggle @if(request()->routeIs('admin.file-manager')) sidenav-overlay-toggler @else toggle-sidebar @endif">
+      <button class="btn btn-toggle toggle-sidebar">
         <i class="icon-menu"></i>
       </button>
     </div>
@@ -20,12 +20,25 @@
   <!-- End Logo Header -->
 
   <!-- Navbar Header -->
-  <nav class="navbar navbar-header navbar-expand-lg" data-background-color="dark">
+  <nav class="navbar navbar-header navbar-expand-lg" @if(request()->cookie('admin-theme') == 'dark') data-background-color="dark" @endif>
 
     <div class="container-fluid">
 
       <ul class="navbar-nav topbar-nav ml-md-auto align-items-center">
-
+        <form action="{{(route('admin.theme.change'))}}" class="mr-4 form-inline" id="adminThemeForm">
+            <div class="form-group">
+                <div class="selectgroup selectgroup-secondary selectgroup-pills">
+                    <label class="selectgroup-item">
+                        <input type="radio" name="theme" value="light" class="selectgroup-input" {{empty(request()->cookie('admin-theme')) || request()->cookie('admin-theme') == 'light' ? 'checked' : ''}} onchange="document.getElementById('adminThemeForm').submit();">
+                        <span class="selectgroup-button selectgroup-button-icon"><i class="fa fa-sun"></i></span>
+                    </label>
+                    <label class="selectgroup-item">
+                        <input type="radio" name="theme" value="dark" class="selectgroup-input" {{request()->cookie('admin-theme') == 'dark' ? 'checked' : ''}} onchange="document.getElementById('adminThemeForm').submit();">
+                        <span class="selectgroup-button selectgroup-button-icon"><i class="fa fa-moon"></i></span>
+                    </label>
+                </div>
+            </div>
+        </form>
         <li class="nav-item dropdown hidden-caret">
           <a class="dropdown-toggle profile-pic" data-toggle="dropdown" href="#" aria-expanded="false">
             <div class="avatar-sm">

@@ -15,7 +15,7 @@
       </div>
       <div class="form">
         @if (session()->has('alert'))
-          <div class="alert alert-danger fade show" role="alert" style="font-size: 14px;">
+          <div class="alert alert-danger fade show" role="alert">
             <strong>Oops!</strong> {{session('alert')}}
           </div>
         @endif
@@ -45,25 +45,5 @@
     <!-- Bootstrap Notify -->
     <script src="{{asset('assets/admin/js/plugin/bootstrap-notify/bootstrap-notify.min.js')}}"></script>
 
-    @if (session()->has('warning'))
-    <script>
-      var content = {};
-
-      content.message = '{{session('warning')}}';
-      content.title = 'Sorry!';
-      content.icon = 'fa fa-bell';
-
-      $.notify(content,{
-        type: 'warning',
-        placement: {
-          from: 'top',
-          align: 'right'
-        },
-        showProgressbar: true,
-        time: 1000,
-        delay: 4000,
-      });
-    </script>
-    @endif
   </body>
 </html>

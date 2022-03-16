@@ -31,10 +31,8 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
-            // \Illuminate\Session\Middleware\AuthenticateSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
-            // \App\Http\Middleware\VerifyCsrfMiddleware::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
 
@@ -65,7 +63,9 @@ class Kernel extends HttpKernel
         'setlang' => \App\Http\Middleware\SetLangMiddleware::class,
         'checkstatus' => \App\Http\Middleware\CheckStatus::class,
         'userstatus' => \App\Http\Middleware\UserStatus::class,
-        'setLfmPath' => \App\Http\Middleware\SetLfmPath::class,
+        'checkUserPermission' => \App\Http\Middleware\CheckPermissionUser::class,
+        'Demo' => \App\Http\Middleware\Demo::class,
+        'routeAccess' => \App\Http\Middleware\RouteAccess::class,
     ];
 
     /**

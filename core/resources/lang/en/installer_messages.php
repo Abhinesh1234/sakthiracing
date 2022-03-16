@@ -7,7 +7,7 @@ return [
      * Shared translations.
      *
      */
-    'title' => 'PlusAgency Installer',
+    'title' => 'Profilex Installer',
     'next' => 'Next Step',
     'back' => 'Previous',
     'finish' => 'Install',
@@ -22,7 +22,7 @@ return [
      */
     'welcome' => [
         'templateTitle' => 'Welcome',
-        'title'   => 'PlusAgency Installer',
+        'title'   => 'Profilex Installer',
         'message' => 'Easy Installation and Setup Wizard.',
         'next'    => 'Check Requirements',
     ],
@@ -106,6 +106,8 @@ return [
                 'app_log_level_label_emergency' => 'emergency',
                 'app_url_label' => 'App Url',
                 'app_url_placeholder' => 'App Url',
+                'website_host_label' => 'Website Host',
+                'website_host_placeholder' => 'Website Host',
                 'db_connection_failed' => 'Could not connect to the database.',
                 'db_connection_label' => 'Database Connection',
                 'db_connection_label_mysql' => 'mysql',
@@ -187,7 +189,7 @@ return [
      *
      */
     'installed' => [
-        'success_log_message' => 'PlusAgency successfully INSTALLED on ',
+        'success_log_message' => 'Profilex successfully INSTALLED on ',
     ],
 
     /*

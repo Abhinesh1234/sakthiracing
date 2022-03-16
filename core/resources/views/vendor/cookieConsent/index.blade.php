@@ -3,6 +3,7 @@
     @include('cookieConsent::dialogContents')
 
     <script>
+        "use strict";
 
         window.laravelCookieConsent = (function () {
 
@@ -32,7 +33,8 @@
                 document.cookie = name + '=' + value
                     + ';expires=' + date.toUTCString()
                     + ';domain=' + COOKIE_DOMAIN
-                    + ';path=/{{ config('session.secure') ? ';secure' : null }}';
+                    + ';path=/{{ config('session.secure') ? ';secure' : null }}'
+                    + '{{ config('session.same_site') ? ';samesite='.config('session.same_site') : null }}';
             }
 
             if (cookieExists('{{ $cookieConsentConfig['cookie_name'] }}')) {

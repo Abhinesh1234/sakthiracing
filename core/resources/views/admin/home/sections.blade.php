@@ -10,10 +10,16 @@
             </a>
         </li>
         <li class="separator">
+          <i class="flaticon-right-arrow"></i>
+        </li>
+        <li class="nav-item">
+          <a href="#">Website Pages</a>
+        </li>
+        <li class="separator">
             <i class="flaticon-right-arrow"></i>
         </li>
         <li class="nav-item">
-            <a href="#">Home Page</a>
+            <a href="#">Settings</a>
         </li>
         <li class="separator">
             <i class="flaticon-right-arrow"></i>
@@ -30,7 +36,7 @@
                 @csrf
                 <div class="card-header">
                     <div class="row">
-                        <div class="col-lg-12">
+                        <div class="col-lg-10">
                             <div class="card-title">Customize Sections</div>
                         </div>
                     </div>
@@ -39,19 +45,6 @@
                     <div class="row">
                         <div class="col-lg-6 offset-lg-3">
                             @csrf
-                            <div class="form-group">
-                                <label>Feature Section **</label>
-                                <div class="selectgroup w-100">
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="feature_section" value="1" class="selectgroup-input" {{$abs->feature_section == 1 ? 'checked' : ''}}>
-                                        <span class="selectgroup-button">Active</span>
-                                    </label>
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="feature_section" value="0" class="selectgroup-input" {{$abs->feature_section == 0 ? 'checked' : ''}}>
-                                        <span class="selectgroup-button">Deactive</span>
-                                    </label>
-                                </div>
-                            </div>
                             <div class="form-group">
                                 <label>Introduction Section **</label>
                                 <div class="selectgroup w-100">
@@ -65,58 +58,77 @@
                                     </label>
                                 </div>
                             </div>
+
                             <div class="form-group">
-                                <label>Service Section **</label>
+                                <label>Features Section **</label>
                                 <div class="selectgroup w-100">
                                     <label class="selectgroup-item">
-                                        <input type="radio" name="service_section" value="1" class="selectgroup-input" {{$abs->service_section == 1 ? 'checked' : ''}}>
+                                        <input type="radio" name="feature_section" value="1" class="selectgroup-input" {{$abs->feature_section == 1 ? 'checked' : ''}}>
                                         <span class="selectgroup-button">Active</span>
                                     </label>
                                     <label class="selectgroup-item">
-                                        <input type="radio" name="service_section" value="0" class="selectgroup-input" {{$abs->service_section == 0 ? 'checked' : ''}}>
+                                        <input type="radio" name="feature_section" value="0" class="selectgroup-input" {{$abs->feature_section == 0 ? 'checked' : ''}}>
                                         <span class="selectgroup-button">Deactive</span>
                                     </label>
                                 </div>
                             </div>
+
                             <div class="form-group">
-                                <label>Approach Section **</label>
+                                <label>Work Process Section **</label>
                                 <div class="selectgroup w-100">
                                     <label class="selectgroup-item">
-                                        <input type="radio" name="approach_section" value="1" class="selectgroup-input" {{$abs->approach_section == 1 ? 'checked' : ''}}>
+                                        <input type="radio" name="process_section" value="1" class="selectgroup-input" {{$abs->process_section == 1 ? 'checked' : ''}}>
                                         <span class="selectgroup-button">Active</span>
                                     </label>
                                     <label class="selectgroup-item">
-                                        <input type="radio" name="approach_section" value="0" class="selectgroup-input" {{$abs->approach_section == 0 ? 'checked' : ''}}>
+                                        <input type="radio" name="process_section" value="0" class="selectgroup-input" {{$abs->process_section == 0 ? 'checked' : ''}}>
                                         <span class="selectgroup-button">Deactive</span>
                                     </label>
                                 </div>
                             </div>
+
                             <div class="form-group">
-                                <label>Statistics Section **</label>
+                                <label>Featured Users Section **</label>
                                 <div class="selectgroup w-100">
                                     <label class="selectgroup-item">
-                                        <input type="radio" name="statistics_section" value="1" class="selectgroup-input" {{$abs->statistics_section == 1 ? 'checked' : ''}}>
+                                        <input type="radio" name="featured_users_section" value="1" class="selectgroup-input" {{$abs->featured_users_section == 1 ? 'checked' : ''}}>
                                         <span class="selectgroup-button">Active</span>
                                     </label>
                                     <label class="selectgroup-item">
-                                        <input type="radio" name="statistics_section" value="0" class="selectgroup-input" {{$abs->statistics_section == 0 ? 'checked' : ''}}>
+                                        <input type="radio" name="featured_users_section" value="0" class="selectgroup-input" {{$abs->featured_users_section == 0 ? 'checked' : ''}}>
                                         <span class="selectgroup-button">Deactive</span>
                                     </label>
                                 </div>
                             </div>
+
                             <div class="form-group">
-                                <label>Portfolio Section **</label>
+                                <label>Pricing Section **</label>
                                 <div class="selectgroup w-100">
                                     <label class="selectgroup-item">
-                                        <input type="radio" name="portfolio_section" value="1" class="selectgroup-input" {{$abs->portfolio_section == 1 ? 'checked' : ''}}>
+                                        <input type="radio" name="pricing_section" value="1" class="selectgroup-input" {{$abs->pricing_section == 1 ? 'checked' : ''}}>
                                         <span class="selectgroup-button">Active</span>
                                     </label>
                                     <label class="selectgroup-item">
-                                        <input type="radio" name="portfolio_section" value="0" class="selectgroup-input" {{$abs->portfolio_section == 0 ? 'checked' : ''}}>
+                                        <input type="radio" name="pricing_section" value="0" class="selectgroup-input" {{$abs->pricing_section == 0 ? 'checked' : ''}}>
                                         <span class="selectgroup-button">Deactive</span>
                                     </label>
                                 </div>
                             </div>
+
+                            <div class="form-group">
+                                <label>Partners Section **</label>
+                                <div class="selectgroup w-100">
+                                    <label class="selectgroup-item">
+                                        <input type="radio" name="partners_section" value="1" class="selectgroup-input" {{$abs->partners_section == 1 ? 'checked' : ''}}>
+                                        <span class="selectgroup-button">Active</span>
+                                    </label>
+                                    <label class="selectgroup-item">
+                                        <input type="radio" name="partners_section" value="0" class="selectgroup-input" {{$abs->partners_section == 0 ? 'checked' : ''}}>
+                                        <span class="selectgroup-button">Deactive</span>
+                                    </label>
+                                </div>
+                            </div>
+
                             <div class="form-group">
                                 <label>Testimonial Section **</label>
                                 <div class="selectgroup w-100">
@@ -130,32 +142,7 @@
                                     </label>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>Team Section **</label>
-                                <div class="selectgroup w-100">
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="team_section" value="1" class="selectgroup-input" {{$abs->team_section == 1 ? 'checked' : ''}}>
-                                        <span class="selectgroup-button">Active</span>
-                                    </label>
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="team_section" value="0" class="selectgroup-input" {{$abs->team_section == 0 ? 'checked' : ''}}>
-                                        <span class="selectgroup-button">Deactive</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Pricing Section **</label>
-                                <div class="selectgroup w-100">
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="pricing_section" value="1" class="selectgroup-input" {{$abe->pricing_section == 1 ? 'checked' : ''}}>
-                                        <span class="selectgroup-button">Active</span>
-                                    </label>
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="pricing_section" value="0" class="selectgroup-input" {{$abe->pricing_section == 0 ? 'checked' : ''}}>
-                                        <span class="selectgroup-button">Deactive</span>
-                                    </label>
-                                </div>
-                            </div>
+
                             <div class="form-group">
                                 <label>News Section **</label>
                                 <div class="selectgroup w-100">
@@ -169,32 +156,7 @@
                                     </label>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>Call to Action Section **</label>
-                                <div class="selectgroup w-100">
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="call_to_action_section" value="1" class="selectgroup-input" {{$abs->call_to_action_section == 1 ? 'checked' : ''}}>
-                                        <span class="selectgroup-button">Active</span>
-                                    </label>
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="call_to_action_section" value="0" class="selectgroup-input" {{$abs->call_to_action_section == 0 ? 'checked' : ''}}>
-                                        <span class="selectgroup-button">Deactive</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Partners Section **</label>
-                                <div class="selectgroup w-100">
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="partner_section" value="1" class="selectgroup-input" {{$abs->partner_section == 1 ? 'checked' : ''}}>
-                                        <span class="selectgroup-button">Active</span>
-                                    </label>
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="partner_section" value="0" class="selectgroup-input" {{$abs->partner_section == 0 ? 'checked' : ''}}>
-                                        <span class="selectgroup-button">Deactive</span>
-                                    </label>
-                                </div>
-                            </div>
+
                             <div class="form-group">
                                 <label>Top Footer Section **</label>
                                 <div class="selectgroup w-100">

@@ -2,65 +2,43 @@
 
 namespace App\Http\Controllers\Front;
 
-use App\Donation;
-use App\DonationDetail;
-use App\Event;
-use App\EventCategory;
-use Illuminate\Http\Request;
+require_once 'core/vendor/Transliterator/Transliterator.php';
+require_once 'core/vendor/vcard/VCard.php';
 use App\Http\Controllers\Controller;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
-use App\BasicSetting as BS;
-use App\BasicExtended as BE;
-use App\Slider;
-use App\Scategory;
-use App\Jcategory;
-use App\Portfolio;
-use App\Feature;
-use App\Point;
-use App\Statistic;
-use App\Testimonial;
-use App\Gallery;
-use App\GalleryCategory;
-use App\Faq;
-use App\Page;
-use App\Member;
-use App\Blog;
-use App\Partner;
-use App\Service;
-use App\Job;
-use App\Archive;
-use App\Article;
-use App\ArticleCategory;
-use App\Bcategory;
-use App\Subscriber;
-use App\Quote;
-use App\Language;
-use App\Package;
-use App\PackageOrder;
-use App\Admin;
-use App\BasicExtra;
-use App\CalendarEvent;
-use App\FAQCategory;
-use App\Home;
-use App\Mail\ContactMail;
-use App\Mail\OrderPackage;
-use App\Mail\OrderQuote;
-use App\OfflineGateway;
-use App\PackageCategory;
-use App\PackageInput;
-use App\PaymentGateway;
-use App\QuoteInput;
-use App\RssFeed;
-use App\RssPost;
-use App\Subscription;
-use Session;
-use Validator;
+use App\Http\Helpers\MegaMailer;
+use App\Http\Helpers\UserPermissionHelper;
+use App\Models\OfflineGateway;
+use App\Models\Package;
+use App\Models\Partner;
+use App\Models\PaymentGateway;
+use App\Models\User;
+use Illuminate\Http\Request;
+use App\Models\Process;
+use App\Models\Feature;
+use App\Models\Language;
+use App\Models\Subscriber;
+use App\Models\User\Language as UserLanguage;
+use App\Models\Testimonial;
+use App\Models\BasicSetting as BS;
+use App\Models\Bcategory;
+use App\Models\Blog;
+use App\Models\BasicExtended as BE;
+use App\Models\BasicExtended;
+use App\Models\BasicSetting;
+use App\Models\Faq;
+use App\Models\Page;
+use App\Models\Seo;
+use App\Models\User\HomePageText;
+use App\Models\User\UserCustomDomain;
+use App\Models\User\UserCv;
+use App\Models\User\UserVcard;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 use Config;
-use Mail;
-use PDF;
-use Auth;
+use PHPMailer\PHPMailer\PHPMailer;
+use JeroenDesloovere\VCard\VCard;
+use Validator;
 
 class FrontendController extends Controller
 {
@@ -71,6 +49,12 @@ class FrontendController extends Controller
 
         Config::set('captcha.sitekey', $bs->google_recaptcha_site_key);
         Config::set('captcha.secret', $bs->google_recaptcha_secret_key);
+        Config::set('mail.host', $be->smtp_host);
+        Config::set('mail.port', $be->smtp_port);
+        Config::set('mail.username', $be->smtp_username);
+        Config::set('mail.password', $be->smtp_password);
+        Config::set('mail.encryption', $be->encryption);
+
     }
 
     public function index()
@@ -80,469 +64,174 @@ class FrontendController extends Controller
         } else {
             $currentLang = Language::where('is_default', 1)->first();
         }
-        $data['currentLang'] = $currentLang;
-
-        $be = $currentLang->basic_extended;
-        $bex = $currentLang->basic_extra;
         $lang_id = $currentLang->id;
 
-        $data['sliders'] = Slider::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
+        $data['processes'] = Process::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
         $data['features'] = Feature::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-        $version = $be->theme_version;
+        $data['featured_users'] = User::where([
+            ['featured', 1],
+            ['status', 1]
+        ])
+        ->whereHas('memberships', function($q){
+            $q->where('status','=',1)
+            ->where('start_date','<=', Carbon::now()->format('Y-m-d'))
+            ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
+        })->orderBy('feature_time', 'DESC')->get();
+        $data['testimonials'] = Testimonial::where('language_id', $lang_id)
+            ->orderBy('serial_number', 'ASC')
+            ->get();
+        $data['blogs'] = Blog::where('language_id', $lang_id)->orderBy('id', 'DESC')->take(2)->get();
 
-        // if home page page builder is disabled
-        if ($bex->home_page_pagebuilder == 0) {
-            $data['portfolios'] = Portfolio::where('language_id', $lang_id)->where('feature', 1)->orderBy('serial_number', 'ASC')->limit(10)->get();
-            $data['points'] = Point::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-            $data['statistics'] = Statistic::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-            $data['testimonials'] = Testimonial::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-            $data['faqs'] = Faq::orderBy('serial_number', 'ASC')->get();
-            $data['members'] = Member::where('language_id', $lang_id)->where('feature', 1)->get();
-            $data['blogs'] = Blog::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->limit(6)->get();
-            $data['partners'] = Partner::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-            $data['packages'] = Package::where('language_id', $lang_id)->where('feature', 1)->orderBy('serial_number', 'ASC')->get();
-            $data['scategories'] = Scategory::where('language_id', $lang_id)->where('feature', 1)->where('status', 1)->orderBy('serial_number', 'ASC')->get();
-            if (!serviceCategory()) {
-                $data['services'] = Service::where('language_id', $lang_id)->where('feature', 1)->orderBy('serial_number', 'ASC')->get();
-            }
+        $data['partners'] = Partner::where('language_id', $lang_id)
+            ->orderBy('serial_number', 'ASC')
+            ->get();
+
+        $data['seo'] = Seo::where('language_id', $lang_id)->first();
+
+        $terms = [];
+        if (Package::query()->where('status', '1')->where('featured', '1')->where('term', 'monthly')->count() > 0) {
+            $terms[] = 'Monthly';
+        } 
+        if (Package::query()->where('status', '1')->where('featured', '1')->where('term', 'yearly')->count() > 0) {
+            $terms[] = 'Yearly';
+        } 
+        if (Package::query()->where('status', '1')->where('featured', '1')->where('term', 'lifetime')->count() > 0) {
+            $terms[] = 'Lifetime';
         }
-        // if home page page builder is disabled
-        else {
-            $data['home'] = Home::where('theme', $be->theme_version)->where('language_id', $currentLang->id)->first();
+        $data['terms'] = $terms;
+
+        $be = BasicExtended::select('package_features')->firstOrFail();
+        $allPfeatures = $be->package_features ? $be->package_features : "[]";
+        $data['allPfeatures'] = json_decode($allPfeatures, true);
+
+        return view('front.index', $data);
+    }    
+    
+    public function subscribe(Request $request)
+    {
+        $rules = [
+            'email' => 'required|email|unique:subscribers'
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json(array('errors' => $validator->getMessageBag()->toArray()));
         }
 
-        // if home page page builder is disabled
-        if ($bex->home_page_pagebuilder == 0) {
-            $data['portfolios'] = Portfolio::where('language_id', $lang_id)->where('feature', 1)->orderBy('serial_number', 'ASC')->limit(10)->get();
-            $data['points'] = Point::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-            $data['statistics'] = Statistic::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-            $data['testimonials'] = Testimonial::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-            $data['faqs'] = Faq::orderBy('serial_number', 'ASC')->get();
-            $data['members'] = Member::where('language_id', $lang_id)->where('feature', 1)->get();
-            $data['blogs'] = Blog::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->limit(6)->get();
-            $data['partners'] = Partner::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-            $data['packages'] = Package::where('language_id', $lang_id)->where('feature', 1)->orderBy('serial_number', 'ASC')->get();
-            $data['scategories'] = Scategory::where('language_id', $lang_id)->where('feature', 1)->where('status', 1)->orderBy('serial_number', 'ASC')->get();
-            if (!serviceCategory()) {
-                $data['services'] = Service::where('language_id', $lang_id)->where('feature', 1)->orderBy('serial_number', 'ASC')->get();
-            }
-        }
-        // if home page page builder is disabled
-        else {
-            $data['home'] = Home::where('theme', $be->theme_version)->where('language_id', $currentLang->id)->first();
-        }
+        $subsc = new Subscriber;
+        $subsc->email = $request->email;
+        $subsc->save();
 
-        if ($version == 'gym') {
-            if ($bex->home_page_pagebuilder == 1) {
-                return view('front.gym.index', $data);
-            } else {
-                return view('front.gym.index1', $data);
-            }
-        } elseif ($version == 'car') {
-            if ($bex->home_page_pagebuilder == 1) {
-                return view('front.car.index', $data);
-            } else {
-                return view('front.car.index1', $data);
-            }
-        } elseif ($version == 'cleaning') {
-            if ($bex->home_page_pagebuilder == 1) {
-                return view('front.cleaning.index', $data);
-            } else {
-                return view('front.cleaning.index1', $data);
-            }
-        } elseif ($version == 'construction') {
-            if ($bex->home_page_pagebuilder == 1) {
-                return view('front.construction.index', $data);
-            } else {
-                return view('front.construction.index1', $data);
-            }
-        } elseif ($version == 'logistic') {
-            if ($bex->home_page_pagebuilder == 1) {
-                return view('front.logistic.index', $data);
-            } else {
-                return view('front.logistic.index1', $data);
-            }
-        } elseif ($version == 'lawyer') {
-            if ($bex->home_page_pagebuilder == 1) {
-                return view('front.lawyer.index', $data);
-            } else {
-                return view('front.lawyer.index1', $data);
-            }
-        } elseif ($version == 'default' || $version == 'dark') {
-            if ($bex->home_page_pagebuilder == 1) {
-                return view('front.default.index', $data);
-            } else {
-                return view('front.default.index1', $data);
-            }
-        }
+        return "success";
     }
 
-    public function services(Request $request)
+    public function loginView()
     {
+
+        return view('front.login');
+    }
+
+    public function checkUsername($username) {
+        $count = User::where('username', $username)->count();
+        $status = $count > 0 ? true : false;
+        return response()->json($status);
+    }
+
+    public function step1($status, $id)
+    {
+        if (Auth::check()) {
+            return redirect()->route('user.plan.extend.index');
+        }
+        $data['status'] = $status;
+        $data['id'] = $id;
+        $package = Package::findOrFail($id);
+        $data['package'] = $package;
+
+        $hasSubdomain = false;
+        $features = [];
+        if (!empty($package->features)) {
+            $features = json_decode($package->features, true);
+        }
+        if (is_array($features) && in_array('Subdomain', $features)) {
+            $hasSubdomain = true;
+        }
+
+        $data['hasSubdomain'] = $hasSubdomain;
+
+        return view('front.step', $data);
+    }
+
+    public function step2(Request $request)
+    {
+        $data = $request->session()->get('data');
+        return view('front.checkout', $data);
+    }
+
+    public function checkout(Request $request)
+    {
+        $this->validate($request, [
+            'username' => 'required|alpha_num|unique:users',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:8|confirmed'
+        ]);
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
         } else {
             $currentLang = Language::where('is_default', 1)->first();
         }
-        $data['currentLang'] = $currentLang;
+        $seo = Seo::where('language_id', $currentLang->id)->first();
         $be = $currentLang->basic_extended;
-
-
-        $category = $request->category;
-        $term = $request->term;
-
-        if (!empty($category)) {
-            $data['category'] = Scategory::findOrFail($category);
-        }
-
-        $data['services'] = Service::when($category, function ($query, $category) {
-            return $query->where('scategory_id', $category);
-        })->when($term, function ($query, $term) {
-            return $query->where('title', 'like', '%' . $term . '%');
-        })->when($currentLang, function ($query, $currentLang) {
-            return $query->where('language_id', $currentLang->id);
-        })->orderBy('serial_number', 'ASC')->paginate(6);
-
-
-        $version = $be->theme_version;
-
-        if ($version == 'gym') {
-            return view('front.gym.services', $data);
-        } elseif ($version == 'car') {
-            return view('front.car.services', $data);
-        } elseif ($version == 'cleaning') {
-            return view('front.cleaning.services', $data);
-        } elseif ($version == 'construction') {
-            return view('front.construction.services', $data);
-        } elseif ($version == 'logistic') {
-            return view('front.logistic.services', $data);
-        } elseif ($version == 'lawyer') {
-            return view('front.lawyer.services', $data);
-        } elseif ($version == 'default' || $version == 'dark') {
-            return view('front.default.services', $data);
-        }
-    }
-
-    public function packages()
-    {
-      if (session()->has('lang')) {
-        $currentLang = Language::where('code', session()->get('lang'))->first();
-      } else {
-        $currentLang = Language::where('is_default', 1)->first();
-      }
-
-      $data['currentLang'] = $currentLang;
-      $be = $currentLang->basic_extended;
-
-      $data['categories'] = PackageCategory::where('language_id', $currentLang->id)
-        ->where('status', 1)->orderBy('serial_number', 'ASC')->get();
-
-      $data['packages'] = Package::when($currentLang, function ($query, $currentLang) {
-        return $query->where('language_id', $currentLang->id);
-      })->orderBy('serial_number', 'ASC')->get();
-
-      if (Auth::check()) {
-        $data['activeSub'] = Subscription::where('user_id', Auth::user()->id)->where('status', 1);
-      }
-
-      $version = $be->theme_version;
-
-      if ($version == 'gym') {
-        return view('front.gym.packages', $data);
-      } elseif ($version == 'car') {
-        return view('front.car.packages', $data);
-      } elseif ($version == 'cleaning') {
-        return view('front.cleaning.packages', $data);
-      } elseif ($version == 'construction') {
-        return view('front.construction.packages', $data);
-      } elseif ($version == 'logistic') {
-        return view('front.logistic.packages', $data);
-      } elseif ($version == 'lawyer') {
-        return view('front.lawyer.packages', $data);
-      } elseif ($version == 'default' || $version == 'dark') {
-        return view('front.default.packages', $data);
-      }
-    }
-
-    public function causes(Request $request)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-        $data['currentLang'] = $currentLang;
-        $data['bs'] = $currentLang->basic_setting;
-        $bex = $currentLang->basic_extra;
-        if ($bex->is_donation == 0) {
-            return back();
-        }
-        $be = $currentLang->basic_extended;
-        $causes = Donation::query()
-            ->where('lang_id', $currentLang->id)
-            ->orderByDesc('id')
-            ->paginate(6);
-        $causes->map(function ($cause) use ($bex) {
-            $raised_amount = DonationDetail::query()
-                ->where('donation_id', '=', $cause->id)
-                ->where('status', '=', "Success")
-                ->sum('amount');
-            $goal_percentage = $raised_amount > 0 ? (($raised_amount / $cause->goal_amount) * 100) : 0;
-            $cause['raised_amount'] = $raised_amount > 0 ? round($raised_amount, 2) : 0;
-            $cause['goal_percentage'] = round($goal_percentage, 1);
-        });
-        $data['causes'] = $causes;
-        $data['bex'] = $bex;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-        return view('front.causes', $data);
-    }
-    public function causeDetails($slug)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-        $data['currentLang'] = $currentLang;
-        $data['bs'] = $currentLang->basic_setting;
-        $bex = $currentLang->basic_extra;
-        if ($bex->is_donation == 0) {
-            return back();
-        }
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-        $cause = Donation::where('slug', $slug)->firstOrFail();
-        $raised_amount = DonationDetail::query()
-            ->where('donation_id', '=', $cause->id)
-            ->where('status', '=', "Success")
-            ->sum('amount');
-        $goal_percentage = $raised_amount > 0 ? (($raised_amount / $cause->goal_amount) * 100) : 0;
-        $cause['raised_amount'] = $raised_amount > 0 ? round($raised_amount, 2) : 0;
-        $cause['goal_percentage'] = round($goal_percentage, 1);
-        $data['custom_amounts'] = explode(',', $cause->custom_amount);
-        $online = PaymentGateway::where('status', 1)->get();
-        $offline = OfflineGateway::where('donation_checkout_status', 1)->orderBy('serial_number', 'ASC')->get();
+        $data['bex'] = $be;
+        $data['username'] = $request->username;
+        $data['email'] = $request->email;
+        $data['password'] = $request->password;
+        $data['status'] = $request->status;
+        $data['id'] = $request->id;
+        $online = PaymentGateway::query()->where('status', 1)->get();
+        $offline = OfflineGateway::where('status', 1)->get();
         $data['offline'] = $offline;
-        $data['payment_gateways'] = $online->mergeRecursive($offline);
-        $data['cause'] = $cause;
-        $data['bex'] = $bex;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-        return view('front.cause-details', $data);
+        $data['payment_methods'] = $online->merge($offline);
+        $data['package'] = Package::query()->findOrFail($request->id);
+        $data['seo'] = $seo;
+        $request->session()->put('data', $data);
+        return redirect()->route('front.registration.step2');
     }
-    public function paymentInstruction(Request $request)
-    {
-        $offline = OfflineGateway::where('name', $request->name)->select('short_description', 'instructions', 'is_receipt')->first();
-        return response()->json(['description' => $offline->short_description, 'instructions' => replaceBaseUrl($offline->instructions), 'is_receipt' => $offline->is_receipt]);
-    }
-    public function events(Request $request)
+
+
+    // packages start
+    public function pricing(Request $request)
     {
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
         } else {
             $currentLang = Language::where('is_default', 1)->first();
         }
-        $data['bex'] = $currentLang->basic_extra;
-        $data['currentLang'] = $currentLang;
-        $be = $currentLang->basic_extended;
-        $data['bs'] = $currentLang->basic_setting;
-        $data['event_categories'] = EventCategory::where('lang_id', $currentLang->id)->where('status', 1)->select('id', 'name')->get();
-        $data['events'] = Event::with('eventCategories')
-            ->when($request->title, function ($q) use ($request) {
-                return $q->where('title', 'like', '%' . $request->title . '%');
-            })->when($request->location, function ($q) use ($request) {
-                return $q->where('venue_location', 'like', '%' . $request->location . '%');
-            })->when($request->category, function ($q) use ($request) {
-                return $q->where('cat_id', $request->category);
-            })->when($request->date, function ($q) use ($request) {
-                return $q->where('date', $request->date);
-            })
-            ->where('lang_id', $currentLang->id)
-            ->orderBy('id', 'DESC')
-            ->paginate(6);
-        $version = $be->theme_version;
+        $data['seo'] = Seo::where('language_id', $currentLang->id)->first();
 
-        if ($version == 'dark') {
-            $version = 'default';
+        $data['bex'] = BE::first();
+        $data['abs'] = BS::first();
+
+        $terms = [];
+        if (Package::query()->where('status', '1')->where('term', 'monthly')->count() > 0) {
+            $terms[] = 'Monthly';
+        } 
+        if (Package::query()->where('status', '1')->where('term', 'yearly')->count() > 0) {
+            $terms[] = 'Yearly';
+        } 
+        if (Package::query()->where('status', '1')->where('term', 'lifetime')->count() > 0) {
+            $terms[] = 'Lifetime';
         }
+        $data['terms'] = $terms;
 
-        $data['version'] = $version;
-        return view('front.events', $data);
-    }
-    public function eventDetails($slug)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-        $data['bex'] = $currentLang->basic_extra;
-        $data['bs'] = $currentLang->basic_setting;
-        $data['currentLang'] = $currentLang;
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-        $event = Event::with('eventCategories')->where('slug', $slug)->firstOrFail();
-        $data['event'] = $event;
-        $online = PaymentGateway::where('status', 1)->get();
-        $offline = OfflineGateway::where('event_checkout_status', 1)->orderBy('serial_number', 'ASC')->get();
-        $data['offline'] = $offline;
-        $data['payment_gateways'] = $online->mergeRecursive($offline);
-        $data["moreEvents"] = Event::with('eventCategories')->where(function ($q) use ($event) {
-            $q->where('id', '!=', $event->id)->where('cat_id', '=', $event->cat_id);
-        })->where('lang_id', $currentLang->id)->take(5)->orderBy('id', 'DESC')->get();
-        $version = $be->theme_version;
+        $be = BasicExtended::select('package_features')->firstOrFail();
+        $allPfeatures = $be->package_features ? $be->package_features : "[]";
+        $data['allPfeatures'] = json_decode($allPfeatures, true);
 
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-        return view('front.event-details', $data);
+        return view('front.pricing', $data);
     }
 
-    public function portfolios(Request $request)
-    {
-      if (session()->has('lang')) {
-        $currentLang = Language::where('code', session()->get('lang'))->first();
-      } else {
-        $currentLang = Language::where('is_default', 1)->first();
-      }
-
-      $data['currentLang'] = $currentLang;
-      $be = $currentLang->basic_extended;
-
-      $category = $request->category;
-
-      if (!empty($category)) {
-        $data['category'] = Scategory::findOrFail($category);
-      }
-
-      $data['portfolios'] = Portfolio::when($category, function ($query, $category) {
-        $serviceIdArr = [];
-        $serviceids = Service::select('id')->where('scategory_id', $category)->get();
-        foreach ($serviceids as $key => $serviceid) {
-          $serviceIdArr[] = $serviceid->id;
-        }
-        return $query->whereIn('service_id', $serviceIdArr);
-      })->when($currentLang, function ($query, $currentLang) {
-        return $query->where('language_id', $currentLang->id);
-      })->orderBy('serial_number', 'ASC');
-
-      $version = $be->theme_version;
-
-      if ($version == 'gym') {
-        $data['portfolios'] = $data['portfolios']->get();
-        return view('front.gym.portfolios', $data);
-      } elseif ($version == 'car') {
-        $data['portfolios'] = $data['portfolios']->get();
-        return view('front.car.portfolios', $data);
-      } elseif ($version == 'cleaning') {
-        $data['portfolios'] = $data['portfolios']->get();
-        return view('front.cleaning.portfolios', $data);
-      } elseif ($version == 'construction') {
-        $data['portfolios'] = $data['portfolios']->get();
-        return view('front.construction.portfolios', $data);
-      } elseif ($version == 'logistic') {
-        $data['portfolios'] = $data['portfolios']->get();
-        return view('front.logistic.portfolios', $data);
-      } elseif ($version == 'lawyer') {
-        $data['portfolios'] = $data['portfolios']->get();
-        return view('front.lawyer.portfolios', $data);
-      } elseif ($version == 'default' || $version == 'dark') {
-        $data['portfolios'] = $data['portfolios']->get();
-        return view('front.default.portfolios', $data);
-      }
-    }
-
-    public function portfoliodetails($slug)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $data['portfolio'] = Portfolio::where('slug', $slug)->firstOrFail();
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        return view('front.portfolio-details', $data);
-    }
-
-    public function servicedetails($slug)
-    {
-
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $data['service'] = Service::where('slug', $slug)->firstOrFail();
-
-        if ($data['service']->details_page_status == 0) {
-            return back();
-        }
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        return view('front.service-details', $data);
-    }
-
-    public function careerdetails($slug)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $data['jcats'] = $currentLang->jcategories()->where('status', 1)->orderBy('serial_number', 'ASC')->get();
-
-        $data['job'] = Job::where('slug', $slug)->firstOrFail();
-
-        $data['jobscount'] = Job::when($currentLang, function ($query, $currentLang) {
-            return $query->where('language_id', $currentLang->id);
-        })->count();
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-
-        return view('front.career-details', $data);
-    }
-
+    // blog section start
     public function blogs(Request $request)
     {
         if (session()->has('lang')) {
@@ -550,58 +239,34 @@ class FrontendController extends Controller
         } else {
             $currentLang = Language::where('is_default', 1)->first();
         }
+        $data['seo'] = Seo::where('language_id', $currentLang->id)->first();
+
         $data['currentLang'] = $currentLang;
 
         $lang_id = $currentLang->id;
-        $be = $currentLang->basic_extended;
 
         $category = $request->category;
-        $catid = null;
         if (!empty($category)) {
-            $data['category'] = Bcategory::where('slug', $category)->firstOrFail();
-            $catid = $data['category']->id;
+            $data['category'] = Bcategory::findOrFail($category);
         }
         $term = $request->term;
-        $tag = $request->tag;
-        $month = $request->month;
-        $year = $request->year;
-        $data['archives'] = Archive::orderBy('id', 'DESC')->get();
-        $data['bcats'] = Bcategory::where('language_id', $lang_id)->where('status', 1)->orderBy('serial_number', 'ASC')->get();
-        if (!empty($month) && !empty($year)) {
-            $archive = true;
-        } else {
-            $archive = false;
-        }
 
-        $data['blogs'] = Blog::when($catid, function ($query, $catid) {
-            return $query->where('bcategory_id', $catid);
+        $data['bcats'] = Bcategory::where('language_id', $lang_id)->where('status', 1)->orderBy('serial_number', 'ASC')->get();
+
+
+        $data['blogs'] = Blog::when($category, function ($query, $category) {
+            return $query->where('bcategory_id', $category);
         })
             ->when($term, function ($query, $term) {
                 return $query->where('title', 'like', '%' . $term . '%');
             })
-            ->when($tag, function ($query, $tag) {
-                return $query->where('tags', 'like', '%' . $tag . '%');
-            })
-            ->when($archive, function ($query) use ($month, $year) {
-                return $query->whereMonth('created_at', $month)->whereYear('created_at', $year);
-            })
             ->when($currentLang, function ($query, $currentLang) {
                 return $query->where('language_id', $currentLang->id);
-            })->orderBy('serial_number', 'ASC')->paginate(6);
-
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-
+            })->orderBy('serial_number', 'ASC')->paginate(3);
         return view('front.blogs', $data);
     }
 
-    public function blogdetails($slug)
+    public function blogdetails($slug, $id)
     {
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
@@ -612,183 +277,240 @@ class FrontendController extends Controller
         $lang_id = $currentLang->id;
 
 
-        $data['blog'] = Blog::where('slug', $slug)->firstOrFail();
-
-        $data['archives'] = Archive::orderBy('id', 'DESC')->get();
+        $data['blog'] = Blog::findOrFail($id);
         $data['bcats'] = Bcategory::where('status', 1)->where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
         return view('front.blog-details', $data);
     }
 
-    public function knowledgebase()
+    public function contactView()
     {
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
         } else {
             $currentLang = Language::where('is_default', 1)->first();
         }
-
-        $data['bse'] = $currentLang->basic_extra;
-
-        $data['article_categories'] = ArticleCategory::where('language_id', $currentLang->id)
-            ->where('status', 1)
-            ->orderBy('serial_number', 'ASC')
-            ->get();
-
-        $data['currentLang'] = $currentLang;
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        return view('front.articles', $data);
-    }
-
-    public function knowledgebase_details($slug)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $data['bse'] = $currentLang->basic_extra;
-
-        $data['article_categories'] = ArticleCategory::where('language_id', $currentLang->id)
-            ->where('status', 1)
-            ->orderBy('id', 'desc')
-            ->get();
-
-        $data['details'] = Article::where('language_id', $currentLang->id)
-            ->where('slug', $slug)
-            ->firstOrFail();
-
-        $data['currentLang'] = $currentLang;
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        return view('front.article_details', $data);
-    }
-
-    public function rss(Request $request)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $lang_id = $currentLang->id;
-        $id = $request->id;
-        $data['categories'] = RssFeed::where('language_id', $lang_id)->orderBy('id', 'desc')->get();
-        $data['rss_posts']  = RssPost::where('language_id', $lang_id)
-            ->when($id, function ($query, $id) {
-                return $query->where('rss_feed_id', $id);
-            })->orderBy('id', 'desc')->paginate(4);
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-        $data['version'] = $version;
-
-        return view('front.rss', $data);
-    }
-
-    public function rssdetails($slug, $id)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $lang_id = $currentLang->id;
-        $data['categories'] = RssFeed::where('language_id', $lang_id)->orderBy('id', 'desc')->get();
-        $data['post']  = RssPost::findOrFail($id);
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        return view('front.rss-details', $data);
-    }
-
-    public function contact()
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        $data['langg'] = Language::where('code', session('lang'))->first();
+        $data['seo'] = Seo::where('language_id', $currentLang->id)->first();
 
         return view('front.contact', $data);
     }
 
-    public function sendmail(Request $request)
+    public function faqs()
     {
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
         } else {
             $currentLang = Language::where('is_default', 1)->first();
         }
-        $bs = $currentLang->basic_setting;
+        $data['seo'] = Seo::where('language_id', $currentLang->id)->first();
+        
+        $lang_id = $currentLang->id;
+        $data['faqs'] = Faq::where('language_id', $lang_id)
+            ->orderBy('serial_number', 'DESC')
+            ->get();
+        return view('front.faq', $data);
+    }
 
+    public function dynamicPage($slug)
+    {
+        $data['page'] = Page::where('slug', $slug)->firstOrFail();
+
+        return view('front.dynamic', $data);
+    }
+
+    public function users(Request $request)
+    {
+        if (session()->has('lang')) {
+            $currentLang = Language::where('code', session()->get('lang'))->first();
+        } else {
+            $currentLang = Language::where('is_default', 1)->first();
+        }
+        $data['seo'] = Seo::where('language_id', $currentLang->id)->first();
+
+        $homeTexts = [];
+        if (!empty($request->designation)) {
+            $homeTexts = HomePageText::when($request->designation, function ($q) use ($request) {
+                return $q->where('designation', 'like', '%' . $request->designation . '%');
+            })->select('user_id')->get();
+        }
+
+        $userIds = [];
+
+        foreach ($homeTexts as $key => $homeText) {
+            if (!in_array($homeText->user_id, $userIds)) {
+                $userIds[] = $homeText->user_id;
+            }
+        }
+
+        $data['users'] = null;
+        $users = User::where('online_status',1)
+            ->whereHas('memberships', function($q){
+                $q->where('status','=',1)
+                ->where('start_date','<=', Carbon::now()->format('Y-m-d'))
+                ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
+            })
+            ->when($request->search, function ($q) use ($request) {
+                return $q->where(function ($query) use ($request) {
+                        $query->where('first_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('last_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('username', 'like', '%' . $request->search . '%');
+                    });
+            })
+            ->when($request->location, function ($q) use ($request) {
+                return $q->where(function ($query) use ($request) {
+                    $query->where('city', 'like', '%' . $request->location . '%')
+                    ->orWhere('country', 'like', '%' . $request->location . '%');
+                });
+            })
+            ->when($request->designation, function ($q) use ($userIds) {
+                return $q->where(function ($query) use ($userIds) {
+                    $query->whereIn('id', $userIds);
+                });
+            })
+            // ->when($userIds, function ($q) use ($userIds) {
+            //     return $q;
+            // })
+            ->orderBy('id', 'DESC')
+            ->paginate(9);
+
+        $data['users'] = $users;
+        return view('front.users', $data);
+    }
+
+    public function userDetailView($domain)
+    {
+        $user = getUser();
+        if (Auth::check() && Auth::user()->id != $user->id && $user->online_status != 1) {
+            return redirect()->route('front.index');
+        } elseif (!Auth::check() && $user->online_status != 1) {
+            return redirect()->route('front.index');
+        }
+
+        $package = UserPermissionHelper::userPackage($user->id);
+        if(is_null($package)){
+            Session::flash('warning', 'User membership is expired');
+            if(Auth::check()){
+                return redirect()->route('user-dashboard')->with('error','User membership is expired');
+            }else{
+                return redirect()->route('front.index');
+            }
+        }
+
+        if (session()->has('user_lang')) {
+            $userCurrentLang = UserLanguage::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
+
+            if (empty($userCurrentLang)) {
+                $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+                session()->put('user_lang', $userCurrentLang->code);
+            }
+        } else {
+            $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+        }
+
+        $data['home_text'] = User\HomePageText::query()
+            ->where([
+                ['user_id', $user->id],
+                ['language_id', $userCurrentLang->id]
+            ])->first();
+        $data['portfolios'] = $user->portfolios()->where('language_id', $userCurrentLang->id)->where('featured', 1)->orderBy('serial_number','ASC')->get() ?? collect([]);
+        $data['portfolio_categories'] = $user->portfolioCategories()
+        ->whereHas('portfolios', function($q){
+            $q->where('featured',1);
+        })->where('language_id', $userCurrentLang->id)->where('status', 1)->orderBy('serial_number','ASC')->get() ?? collect([]);
+        $data['skills'] = $user->skills()->where('language_id', $userCurrentLang->id)->orderBy('serial_number','ASC')->get() ?? collect([]);
+        $data['achievements'] = $user->achievements()->where('language_id', $userCurrentLang->id)->orderBy('serial_number','ASC')->get() ?? collect([]);
+        $data['services'] = $user->services()->where([
+            ['lang_id', $userCurrentLang->id],
+            ['featured',1]
+        ])
+        ->orderBy('serial_number','ASC')
+        ->get() ?? collect([]);
+        $data['testimonials'] = $user->testimonials()->where('lang_id', $userCurrentLang->id)->orderBy('serial_number','ASC')->get() ?? collect([]);
+        $data['blogs'] = $user->blogs()
+                ->where('language_id', $userCurrentLang->id)
+                ->latest()
+                ->take(3)
+                ->get() ?? collect([]);
+
+        $data['job_experiences'] = $user->job_experiences()
+                ->where('lang_id', $userCurrentLang->id)
+                ->orderBy('serial_number','ASC')
+                ->get() ?? collect([]);
+        $data['educations'] = $user->educations()
+                ->where('lang_id', $userCurrentLang->id)
+                ->orderBy('serial_number','ASC')
+                ->get() ?? collect([]);
+
+
+        $data['user'] = $user;
+
+        $ubs = User\BasicSetting::select('theme')->where('user_id', $user->id)->firstOrFail();
+        if ($ubs->theme == 1) {
+            return view('user.profile1.index', $data);
+        } elseif ($ubs->theme == 2) {
+            return view('user.profile1.index2', $data);
+        } else {
+            return view('user.profile.profile', $data);
+        }
+    }
+
+    public function paymentInstruction(Request $request)
+    {
+        $offline = OfflineGateway::where('name', $request->name)
+            ->select('short_description', 'instructions', 'is_receipt')
+            ->first();
+        return response()->json(['description' => $offline->short_description,
+            'instructions' => $offline->instructions, 'is_receipt' => $offline->is_receipt]);
+    }
+
+    public function contactMessage($domain, Request $request)
+    {
+        $rules = [
+            'fullname' => 'required',
+            'email' => 'required|email:rfc,dns',
+            'subject' => 'required',
+            'message' => 'required'
+        ];
+
+    
+        $request->validate($rules);
+
+        $toUser = User::query()->findOrFail($request->id);
+        $data['toMail'] = $toUser->email;
+        $data['toName'] = $toUser->username;
+        $data['subject'] = $request->subject;
+        $data['body'] = "<div>$request->message</div><br>
+                         <strong>For further contact with the enquirer please use the below information:</strong><br>
+                         <strong>Enquirer Name:</strong> $request->fullname <br>
+                         <strong>Enquirer Mail:</strong> $request->email <br>
+                         ";
+        $mailer = new MegaMailer();
+        $mailer->mailContactMessage($data);
+        Session::flash('success', 'Mail sent successfully');
+        return back();
+
+    }
+
+    public function adminContactMessage(Request $request)
+    {
+        $rules = [
+            'name' => 'required',
+            'email' => 'required|email:rfc,dns',
+            'subject' => 'required',
+            'message' => 'required'
+        ];
+    
+        $bs = BS::select('is_recaptcha')->first();
+    
+        if ($bs->is_recaptcha == 1) {
+            $rules['g-recaptcha-response'] = 'required|captcha';
+        }
         $messages = [
             'g-recaptcha-response.required' => 'Please verify that you are not a robot.',
             'g-recaptcha-response.captcha' => 'Captcha error! try again later or contact site admin.',
         ];
-
-        $rules = [
-            'name' => 'required',
-            'email' => 'required|email',
-            'subject' => 'required',
-            'message' => 'required'
-        ];
-        if ($bs->is_recaptcha == 1) {
-            $rules['g-recaptcha-response'] = 'required|captcha';
-        }
-
+    
         $request->validate($rules, $messages);
 
-        $request->validate($rules, $messages);
 
         $be =  BE::firstOrFail();
         $from = $request->email;
@@ -809,662 +531,443 @@ class FrontendController extends Controller
 
             $mail->send();
         } catch (\Exception $e) {
-            // die($e->getMessage());
+            Session::flash('success', $e->getMessage());
         }
 
-        Session::flash('success', 'Email sent successfully!');
+        Session::flash('success', 'Message sent successfully');
         return back();
     }
 
-    public function subscribe(Request $request)
-    {
-        $rules = [
-            'email' => 'required|email|unique:subscribers'
-        ];
+    public function userServices($domain){
+        $user = getUser();
+        $id = $user->id;
 
-        $validator = Validator::make($request->all(), $rules);
-
-        if ($validator->fails()) {
-            return response()->json(array('errors' => $validator->getMessageBag()->toArray()));
-        }
-
-        $subsc = new Subscriber;
-        $subsc->email = $request->email;
-        $subsc->save();
-
-        return "success";
-    }
-
-    public function quote()
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $bs = $currentLang->basic_setting;
-
-        if ($bs->is_quote == 0) {
-            return view('errors.404');
-        }
-
-        $lang_id = $currentLang->id;
-
-        $data['services'] = Service::all();
-        $data['inputs'] = QuoteInput::where('language_id', $lang_id)->get();
-        $data['ndaIn'] = QuoteInput::find(10);
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        return view('front.quote', $data);
-    }
-
-    public function sendquote(Request $request)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $bs = $currentLang->basic_setting;
-        $be = $currentLang->basic_extended;
-        $quote_inputs = $currentLang->quote_inputs;
-
-        $messages = [
-            'g-recaptcha-response.required' => 'Please verify that you are not a robot.',
-            'g-recaptcha-response.captcha' => 'Captcha error! try again later or contact site admin.',
-        ];
-
-        $rules = [
-            'name' => 'required',
-            'email' => 'required|email'
-        ];
-
-
-        $allowedExts = array('zip');
-        foreach ($quote_inputs as $input) {
-            if ($input->required == 1) {
-                $rules["$input->name"][] = 'required';
+        if (session()->has('user_lang')) {
+            $userCurrentLang = UserLanguage::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
+            if (empty($userCurrentLang)) {
+                $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+                session()->put('user_lang', $userCurrentLang->code);
             }
-            // check if input type is 5, then check for zip extension
-            if ($input->type == 5) {
-                $rules["$input->name"][] = function ($attribute, $value, $fail) use ($request, $input, $allowedExts) {
-                    if ($request->hasFile("$input->name")) {
-                        $ext = $request->file("$input->name")->getClientOriginalExtension();
-                        if (!in_array($ext, $allowedExts)) {
-                            return $fail("Only zip file is allowed");
-                        }
-                    }
-                };
-            }
-        }
-
-        if ($bs->is_recaptcha == 1) {
-            $rules['g-recaptcha-response'] = 'required|captcha';
-        }
-
-        $request->validate($rules, $messages);
-
-        $fields = [];
-        foreach ($quote_inputs as $key => $input) {
-            $in_name = $input->name;
-            // if the input is file, then move it to 'files' folder
-            if ($input->type == 5) {
-                if ($request->hasFile("$in_name")) {
-                    $fileName = uniqid() . '.' . $request->file("$in_name")->getClientOriginalExtension();
-                    $directory = 'assets/front/files/';
-                    @mkdir($directory, 0775, true);
-                    $request->file("$in_name")->move($directory, $fileName);
-
-                    $fields["$in_name"]['value'] = $fileName;
-                    $fields["$in_name"]['type'] = $input->type;
-                }
-            } else {
-                if ($request["$in_name"]) {
-                    $fields["$in_name"]['value'] = $request["$in_name"];
-                    $fields["$in_name"]['type'] = $input->type;
-                }
-            }
-        }
-        $jsonfields = json_encode($fields);
-        $jsonfields = str_replace("\/", "/", $jsonfields);
-
-
-        $quote = new Quote;
-        $quote->name = $request->name;
-        $quote->email = $request->email;
-        $quote->fields = $jsonfields;
-
-        $quote->save();
-
-
-        // send mail to Admin
-        $from = $request->email;
-        $to = $be->to_mail;
-        $subject = "Quote Request Received";
-
-        $fields = json_decode($quote->fields, true);
-
-        try {
-
-            $mail = new PHPMailer(true);
-            $mail->setFrom($from, $request->name);
-            $mail->addAddress($to);     // Add a recipient
-
-            // Content
-            $mail->isHTML(true);  // Set email format to HTML
-            $mail->Subject = $subject;
-            $mail->Body    = 'A new quote request has been sent.<br/><strong>Client Name: </strong>' . $request->name . '<br/><strong>Client Mail: </strong>' . $request->email;
-
-            $mail->send();
-        } catch (\Exception $e) {
-            // die($e->getMessage());
-        }
-
-        Session::flash('success', 'Quote request sent successfully');
-        return back();
-    }
-
-    public function team()
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
         } else {
-            $currentLang = Language::where('is_default', 1)->first();
+            $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
         }
 
-        $data['members'] = Member::when($currentLang, function ($query, $currentLang) {
-            return $query->where('language_id', $currentLang->id);
-        })->get();
+        $data['home_text'] = User\HomePageText::query()
+            ->where([
+                ['user_id', $id],
+                ['language_id', $userCurrentLang->id]
+            ])->first();
 
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
+        $data['services'] = User\UserService::query()
+                ->where('user_id', $id)
+                ->where('lang_id', $userCurrentLang->id)
+                ->orderBy('serial_number', 'ASC')
+                ->get();
 
-        if ($version == 'gym') {
-            return view('front.gym.team', $data);
-        } elseif ($version == 'car') {
-            return view('front.car.team', $data);
-        } elseif ($version == 'cleaning') {
-            return view('front.cleaning.team', $data);
-        } elseif ($version == 'construction') {
-            return view('front.construction.team', $data);
-        } elseif ($version == 'logistic') {
-            return view('front.logistic.team', $data);
-        } elseif ($version == 'lawyer') {
-            return view('front.lawyer.team', $data);
-        } elseif ($version == 'default' || $version == 'dark') {
-            return view('front.default.team', $data);
+        $ubs = User\BasicSetting::select('theme')->where('user_id', $user->id)->firstOrFail();
+        if ($ubs->theme == 1) {
+            return view('user.profile1.services', $data);
+        } elseif ($ubs->theme == 2) {
+            return view('user.profile1.services2', $data);
+        } else {
+            return view('user.profile.services', $data);
         }
     }
 
-    public function career(Request $request)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
+    public function userServiceDetail($domain, $slug, $id){
+        $data['service'] = User\UserService::query()->findOrFail($id);
+        $userId = $data['service']->user_id;
+
+        $ubs = User\BasicSetting::select('theme')->where('user_id', $userId)->firstOrFail();
+        if ($ubs->theme == 1 || $ubs->theme == 2) {
+            $data['folder'] = "profile1";
         } else {
-            $currentLang = Language::where('is_default', 1)->first();
+            $data['folder'] = "profile";
         }
 
-        $data['jcats'] = $currentLang->jcategories()->where('status', 1)->orderBy('serial_number', 'ASC')->get();
+        return view('user.profile-common.service-details', $data);
+    }
 
-
-        $category = $request->category;
+    public function userBlogs(Request $request, $domain){
+        $user = getUser();
+        $id = $user->id;
+        $data['user'] = $user;
+        $catid = $request->category;
         $term = $request->term;
 
-        if (!empty($category)) {
-            $data['category'] = Jcategory::findOrFail($category);
-        }
-
-        $data['jobs'] = Job::when($category, function ($query, $category) {
-            return $query->where('jcategory_id', $category);
-        })->when($term, function ($query, $term) {
-            return $query->where('title', 'like', '%' . $term . '%');
-        })->when($currentLang, function ($query, $currentLang) {
-            return $query->where('language_id', $currentLang->id);
-        })->orderBy('serial_number', 'ASC')->paginate(4);
-
-        $data['jobscount'] = Job::when($currentLang, function ($query, $currentLang) {
-            return $query->where('language_id', $currentLang->id);
-        })->count();
-
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        return view('front.career', $data);
-    }
-
-    public function calendar()
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
+        if (session()->has('user_lang')) {
+            $userCurrentLang = UserLanguage::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
+            if (empty($userCurrentLang)) {
+                $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+                session()->put('user_lang', $userCurrentLang->code);
+            }
         } else {
-            $currentLang = Language::where('is_default', 1)->first();
+            $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
         }
 
-        $lang_id = $currentLang->id;
+        $data['home_text'] = User\HomePageText::query()
+            ->where([
+                ['user_id', $id],
+                ['language_id', $userCurrentLang->id]
+            ])->first();
 
-        $events = CalendarEvent::where('language_id', $lang_id)->get();
-        $formattedEvents = [];
 
-        foreach ($events as $key => $event) {
-            $formattedEvents["$key"]['title'] = $event->title;
+        $data['blogs'] = User\Blog::query()
+            ->when($catid, function ($query, $catid) {
+                return $query->where('category_id', $catid);
+            })
+            ->when($term, function ($query, $term) {
+                return $query->where('title', 'LIKE', '%' . $term . '%');
+            })
+            ->where('user_id', $id)
+            ->where('language_id', $userCurrentLang->id)
+            ->orderBy('serial_number','ASC')
+            ->paginate(6);
 
-            $startDate = strtotime($event->start_date);
-            $formattedEvents["$key"]['start'] = date('Y-m-d H:i', $startDate);
 
-            $endDate = strtotime($event->end_date);
-            $formattedEvents["$key"]['end'] = date('Y-m-d H:i', $endDate);
-        }
+        $data['latestBlogs'] = User\Blog::query()
+        ->where('user_id', $id)
+        ->where('language_id', $userCurrentLang->id)
+        ->orderBy('id','DESC')
+        ->limit(3)->get();
 
-        $data["formattedEvents"] = $formattedEvents;
+        $data['blog_categories'] = User\BlogCategory::query()
+        ->where('status',1)
+        ->orderBy('serial_number','ASC')
+        ->where('language_id', $userCurrentLang->id)
+        ->where('user_id', $id)
+        ->get();
 
-        $be = $currentLang->basic_extended;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        return view('front.calendar', $data);
-    }
-
-    public function gallery()
-    {
-      if (session()->has('lang')) {
-        $currentLang = Language::where('code', session()->get('lang'))->first();
-      } else {
-        $currentLang = Language::where('is_default', 1)->first();
-      }
-
-      $lang_id = $currentLang->id;
-
-      $data['categories'] = GalleryCategory::where('language_id', $lang_id)->where('status', 1)
-        ->orderBy('serial_number', 'ASC')->get();
-
-      $data['galleries'] = Gallery::with('galleryImgCategory')->where('language_id', $lang_id)
-        ->orderBy('serial_number', 'ASC')->get();
-
-      $be = $currentLang->basic_extended;
-      $version = $be->theme_version;
-
-      if ($version == 'dark') {
-        $version = 'default';
-      }
-
-      $data['version'] = $version;
-
-      return view('front.gallery', $data);
-    }
-
-    public function faq()
-    {
-      if (session()->has('lang')) {
-        $currentLang = Language::where('code', session()->get('lang'))->first();
-      } else {
-        $currentLang = Language::where('is_default', 1)->first();
-      }
-
-      $lang_id = $currentLang->id;
-
-      $data['categories'] = FAQCategory::where('language_id', $lang_id)->where('status', 1)
-        ->orderBy('serial_number', 'ASC')->get();
-
-      $data['faqs'] = Faq::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
-
-      $be = $currentLang->basic_extended;
-      $version = $be->theme_version;
-
-      if ($version == 'dark') {
-        $version = 'default';
-      }
-
-      $data['version'] = $version;
-
-      return view('front.faq', $data);
-    }
-
-    public function dynamicPage($slug)
-    {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
+        $data['allCount'] = User\Blog::query()
+        ->where('user_id', $id)
+        ->where('language_id', $userCurrentLang->id)
+        ->count();
+    
+        $ubs = User\BasicSetting::select('theme')->where('user_id', $user->id)->firstOrFail();
+        if ($ubs->theme == 1) {
+            return view('user.profile1.blogs', $data);
+        } elseif ($ubs->theme == 2) {
+            return view('user.profile1.blogs2', $data);
         } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $data['page'] = Page::where('slug', $slug)->firstOrFail();
-
-        $be = $currentLang->basic_extended;
-        $bex = $currentLang->basic_extra;
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        if($bex->custom_page_pagebuilder == 1) {
-          return view('front.dynamic', $data);
-        } else {
-            return view('front.dynamic1', $data);
+            return view('user.profile.blogs', $data);
         }
     }
 
-    public function changeLanguage($lang)
+    public function userBlogDetail($domain, $slug, $id){
+        $user = getUser();
+        $userId = $user->id;
+        if (session()->has('user_lang')) {
+            $userCurrentLang = UserLanguage::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
+            if (empty($userCurrentLang)) {
+                $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+                session()->put('user_lang', $userCurrentLang->code);
+            }
+        } else {
+            $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+        }
+
+        $data['blog'] = User\Blog::query()->findOrFail($id);
+
+        $data['latestBlogs'] = User\Blog::query()
+        ->where('user_id', $userId)
+        ->where('language_id', $userCurrentLang->id)
+        ->orderBy('id','DESC')
+        ->limit(3)->get();
+
+        $data['blog_categories'] = User\BlogCategory::query()
+        ->where('status',1)
+        ->orderBy('serial_number','ASC')
+        ->where('language_id', $userCurrentLang->id)
+        ->where('user_id', $userId)
+        ->get();
+
+        $data['allCount'] = User\Blog::query()
+        ->where('user_id', $userId)
+        ->where('language_id', $userCurrentLang->id)
+        ->count();
+
+        $userId = $data['blog']->user_id;
+
+        $ubs = User\BasicSetting::select('theme')->where('user_id', $userId)->firstOrFail();
+        if ($ubs->theme == 1 || $ubs->theme == 2) {
+            $data['folder'] = "profile1";
+        } else {
+            $data['folder'] = "profile";
+        }
+
+        return view('user.profile-common.blog-details', $data);
+    }
+
+    public function userPortfolios(Request $request, $domain){
+        $user = getUser();
+        $id = $user->id;
+        if (session()->has('user_lang')) {
+            $userCurrentLang = UserLanguage::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
+            if (empty($userCurrentLang)) {
+                $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+                session()->put('user_lang', $userCurrentLang->code);
+            }
+        } else {
+            $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+        }
+
+        $data['home_text'] = User\HomePageText::query()
+            ->where([
+                ['user_id', $id],
+                ['language_id', $userCurrentLang->id]
+            ])->first();
+        $data['portfolio_categories'] = User\PortfolioCategory::query()
+            ->where('status',1)
+            ->orderBy('serial_number','ASC')
+            ->where('language_id', $userCurrentLang->id)
+            ->where('user_id', $id)
+            ->get();
+
+        $data['catId'] = $request->category;
+
+        $data['portfolios'] = User\Portfolio::query()
+            ->where('user_id', $id)
+            ->latest()
+            ->orderBy('serial_number','ASC')
+            ->where('language_id', $userCurrentLang->id)
+            ->get();
+
+    
+        $ubs = User\BasicSetting::select('theme')->where('user_id', $user->id)->firstOrFail();
+        if ($ubs->theme == 1) {
+            return view('user.profile1.portfolios', $data);
+        } elseif ($ubs->theme == 2) {
+            return view('user.profile1.portfolios2', $data);
+        } else {
+            return view('user.profile.portfolios', $data);
+        }
+    }
+
+    public function userPortfolioDetail($domain, $slug, $id){
+        $user = getUser();
+        $userId = $user->id;
+        if (session()->has('user_lang')) {
+            $userCurrentLang = UserLanguage::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
+            if (empty($userCurrentLang)) {
+                $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+                session()->put('user_lang', $userCurrentLang->code);
+            }
+        } else {
+            $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+        }
+
+        $portfolio = User\Portfolio::query()->findOrFail($id);
+        $catId = $portfolio->category_id;
+        $data['relatedPortfolios'] = User\Portfolio::where('category_id', $catId)->where('id', '<>', $portfolio->id)->where('user_id', $userId)->orderBy('id', 'DESC')->limit(5);
+        $data['portfolio'] = $portfolio;
+        $data['portfolio_categories'] = User\PortfolioCategory::query()
+            ->where('status',1)
+            ->where('language_id', $userCurrentLang->id)
+            ->where('user_id', $userId)
+            ->orderBy('serial_number','ASC')
+            ->get();
+        $data['allCount'] = User\Portfolio::where('language_id', $userCurrentLang->id)->where('user_id', $userId)->count();
+
+        $ubs = User\BasicSetting::select('theme')->where('user_id', $userId)->firstOrFail();
+        if ($ubs->theme == 1 || $ubs->theme == 2) {
+            $data['folder'] = "profile1";
+        } else {
+            $data['folder'] = "profile";
+        }
+
+        return view('user.profile-common.portfolio-details', $data);
+    }
+    public function changeLanguage($lang): \Illuminate\Http\RedirectResponse
     {
         session()->put('lang', $lang);
         app()->setLocale($lang);
-
-        $be = be::first();
-        $version = $be->theme_version;
-
         return redirect()->route('front.index');
     }
-
-    public function packageorder(Request $request, $id)
+    public function changeUserLanguage(Request $request, $domain)
     {
-        $bex = BasicExtra::first();
+        session()->put('user_lang', $request->code);
+        return redirect()->route('front.user.detail.view', $domain);
+    }
 
-        if ($bex->package_guest_checkout == 1 && $request->type != 'guest' && !Auth::check()) {
-            Session::put('link', route('front.packageorder.index', $id));
-            return redirect(route('user.login', ['redirected' => 'package-checkout']));
-        } elseif ($bex->package_guest_checkout == 0 && !Auth::check()) {
-            Session::put('link', route('front.packageorder.index', $id));
-            return redirect(route('user.login'));
-        }
-        if ($bex->recurring_billing == 1) {
-            $sub = Subscription::select('next_package_id', 'pending_package_id')->where('user_id', Auth::user()->id)->first();
+    public function vcard($domain, $id) {
+        $vcard = UserVcard::findOrFail($id);
 
-            if (!empty($sub->next_package_id)) {
-                Session::flash('error', 'You already have a package to activate in stock.');
-                return back();
-            }
-            if (!empty($sub->pending_package_id)) {
-                Session::flash('error', 'You already have a pending subscription request.');
-                return back();
-            }
-        }
-
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $lang_id = $currentLang->id;
-
-        $data['package'] = Package::findOrFail($id);
-
-        if ($data['package']->order_status == 0) {
+        
+        $count = $vcard->user->memberships()->where('status','=',1)
+                ->where('start_date','<=', Carbon::now()->format('Y-m-d'))
+                ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'))->count();
+        // check if the vcard owner does not have membership
+        if ($count == 0) {
             return view('errors.404');
         }
 
-        $data['inputs'] = PackageInput::where('language_id', $lang_id)->get();
-        $data['gateways']  = PaymentGateway::whereStatus(1)->whereType('automatic')->get();
-        $data['ogateways']  = OfflineGateway::wherePackageOrderStatus(1)->orderBy('serial_number', 'ASC')->get();
-        $paystackData = PaymentGateway::whereKeyword('paystack')->first();
-        $data['paystack'] = $paystackData->convertAutoData();
 
-        $be = be::first();
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
+        $cFeatures = UserPermissionHelper::packagePermission($vcard->user_id);
+        $cFeatures = json_decode($cFeatures, true);
+        if (empty($cFeatures) || !is_array($cFeatures) || !in_array('vCard', $cFeatures)) {
+            return view('errors.404');
+        }
+        
+        $parsedUrl = parse_url(url()->current());
+        
+        $host =  $parsedUrl['host'];
+        // if the current host contains the website domain
+        if (strpos($host, env('WEBSITE_HOST')) !== false) {
+            // if the current URL is subdomain
+            if ($host != env('WEBSITE_HOST')) {
+                if (!cPackageHasSubdomain($vcard->user)) {
+                    return view('errors.404');
+                }
+            }
+        } 
+        // if the current host doesn't contain the website domain (meaning, custom domain)
+        else {
+            // if the current package doesn't have 'custom domain' feature || the custom domain is not connected
+            $cdomain = UserCustomDomain::where('requested_domain', $host)->where('status', 1)->count();
+            if (!cPackageHasCdomain($vcard->user) || $cdomain == 0) {
+                return view('errors.404');
+            }
         }
 
-        $data['version'] = $version;
+        $infos = json_decode($vcard->information, true);
 
-        return view('front.package-order', $data);
+        $prefs = [];
+        if (!empty($vcard->preferences)) {
+            $prefs = json_decode($vcard->preferences, true);
+        }
+        
+        $keywords = json_decode($vcard->keywords, true);
+
+        $data['vcard'] = $vcard;
+        $data['infos'] = $infos;
+        $data['prefs'] = $prefs;
+        $data['keywords'] = $keywords;
+        if ($vcard->template == 1) {
+            return view('vcard.index1', $data);
+        } elseif ($vcard->template == 2) {
+            return view('vcard.index2', $data);
+        } elseif ($vcard->template == 3) {
+            return view('vcard.index3', $data);
+        } elseif ($vcard->template == 4) {
+            return view('vcard.index4', $data);
+        }
     }
 
-    public function submitorder(Request $request)
-    {
+    public function vcardImport($domain, $id) {
+        $vcard = UserVcard::findOrFail($id);
 
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
+        // define vcard
+        $vcardObj = new VCard();
+
+        // add personal data
+        if (!empty($vcard->name)) {
+            $vcardObj->addName($vcard->name);
+        }
+        if (!empty($vcard->company)) {
+            $vcardObj->addCompany($vcard->company);
+        }
+        if (!empty($vcard->occupation)) {
+            $vcardObj->addJobtitle($vcard->occupation);
+        }
+        if (!empty($vcard->email)) {
+            $vcardObj->addEmail($vcard->email);
+        }
+        if (!empty($vcard->phone)) {
+            $vcardObj->addPhoneNumber($vcard->phone, 'WORK');
+        }
+        if (!empty($vcard->address)) {
+            $vcardObj->addAddress($vcard->address);
+            $vcardObj->addLabel($vcard->address);
+        }
+        if (!empty($vcard->website_url)) {
+            $vcardObj->addURL($vcard->website_url);
         }
 
-        $bs = $currentLang->basic_setting;
-        $be = $currentLang->basic_extended;
-        $package_inputs = $currentLang->package_inputs;
+        $vcardObj->addPhoto('assets/front/img/user/vcard/' . $vcard->profile_image);
+        
+        return \Response::make(
+            $vcardObj->getOutput(),
+            200,
+            $vcardObj->getHeaders(true)
+        );
+    }
 
-        $messages = [
-            'g-recaptcha-response.required' => 'Please verify that you are not a robot.',
-            'g-recaptcha-response.captcha' => 'Captcha error! try again later or contact site admin.',
-        ];
+    public function cv($domain, $id) {
+        $cv = UserCv::findOrFail($id);
 
-        $rules = [
-            'name' => 'required',
-            'email' => 'required|email',
-            'package_id' => 'required'
-        ];
-
-        $allowedExts = array('zip');
-        foreach ($package_inputs as $input) {
-            if ($input->required == 1) {
-                $rules["$input->name"][] = 'required';
-            }
-            // check if input type is 5, then check for zip extension
-            if ($input->type == 5) {
-                $rules["$input->name"][] = function ($attribute, $value, $fail) use ($request, $input, $allowedExts) {
-                    if ($request->hasFile("$input->name")) {
-                        $ext = $request->file("$input->name")->getClientOriginalExtension();
-                        if (!in_array($ext, $allowedExts)) {
-                            return $fail("Only zip file is allowed");
-                        }
-                    }
-                };
-            }
+        
+        $count = $cv->user->memberships()->where('status','=',1)
+                ->where('start_date','<=', Carbon::now()->format('Y-m-d'))
+                ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'))->count();
+        // check if the cv owner does not have membership
+        if ($count == 0) {
+            return view('errors.404');
         }
 
-        if ($bs->is_recaptcha == 1) {
-            $rules['g-recaptcha-response'] = 'required|captcha';
+
+        $cFeatures = UserPermissionHelper::packagePermission($cv->user_id);
+        $cFeatures = json_decode($cFeatures, true);
+        if (empty($cFeatures) || !is_array($cFeatures) || !in_array('Online CV & Export', $cFeatures)) {
+            return view('errors.404');
         }
-
-        $request->validate($rules, $messages);
-
-        $fields = [];
-        foreach ($package_inputs as $key => $input) {
-            $in_name = $input->name;
-            // if the input is file, then move it to 'files' folder
-            if ($input->type == 5) {
-                if ($request->hasFile("$in_name")) {
-                    $fileName = uniqid() . '.' . $request->file("$in_name")->getClientOriginalExtension();
-                    $directory = 'assets/front/files/';
-                    @mkdir($directory, 0775, true);
-                    $request->file("$in_name")->move($directory, $fileName);
-
-                    $fields["$in_name"]['value'] = $fileName;
-                    $fields["$in_name"]['type'] = $input->type;
+        
+        $parsedUrl = parse_url(url()->current());
+        
+        $host =  $parsedUrl['host'];
+        // if the current host contains the website domain
+        if (strpos($host, env('WEBSITE_HOST')) !== false) {
+            // if the current URL is subdomain
+            if ($host != env('WEBSITE_HOST')) {
+                if (!cPackageHasSubdomain($cv->user)) {
+                    return view('errors.404');
                 }
+            }
+        } 
+        // if the current host doesn't contain the website domain (meaning, custom domain)
+        else {
+            // if the current package doesn't have 'custom domain' feature || the custom domain is not connected
+            $cdomain = UserCustomDomain::where('requested_domain', $host)->where('status', 1)->count();
+            if (!cPackageHasCdomain($cv->user) || $cdomain == 0) {
+                return view('errors.404');
+            }
+        }
+
+        $infos = json_decode($cv->cv_information, true);
+        
+        $data['cv'] = $cv;
+        $data['infos'] = $infos;
+
+
+
+
+        if ($cv->template == 1) {
+            $lsections = $cv->user_cv_sections()->where('column', 1);
+            if ($lsections->count() > 0) {
+                $lsections = $lsections->orderBy('order', 'ASC')->get();
             } else {
-                if ($request["$in_name"]) {
-                    $fields["$in_name"]['value'] = $request["$in_name"];
-                    $fields["$in_name"]['type'] = $input->type;
-                }
+                $lsections = [];
             }
-        }
-        $jsonfields = json_encode($fields);
-        $jsonfields = str_replace("\/", "/", $jsonfields);
-
-        $package = Package::findOrFail($request->package_id);
-
-        $in = $request->all();
-        $in['name'] = $request->name;
-        $in['email'] = $request->email;
-        $in['fields'] = $jsonfields;
-
-        $in['package_title'] = $package->title;
-        $in['package_currency'] = $package->currency;
-        $in['package_price'] = $package->price;
-        $in['package_description'] = $package->description;
-        $fileName = str_random(4) . time() . '.pdf';
-        $in['invoice'] = $fileName;
-        $po = PackageOrder::create($in);
-
-
-        // saving order number
-        $po->order_number = $po->id + 1000000000;
-        $po->save();
-
-
-        // sending datas to view to make invoice PDF
-        $fields = json_decode($po->fields, true);
-        $data['packageOrder'] = $po;
-        $data['fields'] = $fields;
-
-
-        // generate pdf from view using dynamic datas
-        PDF::loadView('pdf.package', $data)->save('assets/front/invoices/' . $fileName);
-
-
-        // Send Mail to Buyer
-        $mail = new PHPMailer(true);
-
-        if ($be->is_smtp == 1) {
-            try {
-                //Server settings
-                // $mail->SMTPDebug = SMTP::DEBUG_SERVER;                      // Enable verbose debug output
-                $mail->isSMTP();                                            // Send using SMTP
-                $mail->Host       = $be->smtp_host;                    // Set the SMTP server to send through
-                $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
-                $mail->Username   = $be->smtp_username;                     // SMTP username
-                $mail->Password   = $be->smtp_password;                               // SMTP password
-                $mail->SMTPSecure = $be->encryption;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
-                $mail->Port       = $be->smtp_port;                                    // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
-
-                //Recipients
-                $mail->setFrom($be->from_mail, $be->from_name);
-                $mail->addAddress($request->email, $request->name);     // Add a recipient
-
-                // Attachments
-                $mail->addAttachment('assets/front/invoices/' . $fileName);         // Add attachments
-
-                // Content
-                $mail->isHTML(true);                                  // Set email format to HTML
-                $mail->Subject = "Order placed for " . $package->title;
-                $mail->Body    = 'Hello <strong>' . $request->name . '</strong>,<br/>Your order has been placed successfully. We have attached an invoice in this mail.<br/>Thank you.';
-
-                $mail->send();
-            } catch (Exception $e) {
-                // die($e->getMessage());
+    
+    
+            $rsections = $cv->user_cv_sections()->where('column', 2);
+            if ($rsections->count() > 0) {
+                $rsections = $rsections->orderBy('order', 'ASC')->get();
+            } else {
+                $rsections = [];
             }
-        } else {
-            try {
 
-                //Recipients
-                $mail->setFrom($be->from_mail, $be->from_name);
-                $mail->addAddress($request->email, $request->name);     // Add a recipient
-
-                // Attachments
-                $mail->addAttachment('assets/front/invoices/' . $fileName);         // Add attachments
-
-                // Content
-                $mail->isHTML(true);                                  // Set email format to HTML
-                $mail->Subject = "Order placed for " . $package->title;
-                $mail->Body    = 'Hello <strong>' . $request->name . '</strong>,<br/>Your order has been placed successfully. We have attached an invoice in this mail.<br/>Thank you.';
-
-                $mail->send();
-            } catch (Exception $e) {
-                // die($e->getMessage());
+            $data['lsections'] = $lsections;
+            $data['rsections'] = $rsections;
+            return view('cv.index1', $data);
+        } elseif ($cv->template == 2) {
+            $sections = $cv->user_cv_sections();
+            if ($sections->count() > 0) {
+                $sections = $sections->orderBy('order', 'ASC')->get();
+            } else {
+                $sections = [];
             }
+            $data['sections'] = $sections;
+            return view('cv.index2', $data);
         }
-
-        // send mail to Admin
-        try {
-
-            $mail = new PHPMailer(true);
-            $mail->setFrom($po->email, $po->name);
-            $mail->addAddress($be->from_mail);     // Add a recipient
-
-            // Attachments
-            $mail->addAttachment('assets/front/invoices/' . $fileName);         // Add attachments
-
-            // Content
-            $mail->isHTML(true);  // Set email format to HTML
-            $mail->Subject = "Order placed for " . $package->title;
-            $mail->Body    = 'A new order has been placed.<br/><strong>Order Number: </strong>' . $po->order_number;
-
-            $mail->send();
-        } catch (\Exception $e) {
-            // die($e->getMessage());
-        }
-
-        Session::flash('success', 'Order placed successfully!');
-        return redirect()->route('front.packageorder.confirmation', [$package->id, $po->id]);
-    }
-
-
-    public function orderConfirmation($packageid, $packageOrderId)
-    {
-        $data['package'] = Package::findOrFail($packageid);
-        $bex = BasicExtra::first();
-
-        if ($bex->recurring_billing == 1) {
-            $packageOrder = Subscription::findOrFail($packageOrderId);
-        } else {
-            $packageOrder = PackageOrder::findOrFail($packageOrderId);
-        }
-
-        $data['packageOrder'] = $packageOrder;
-        $data['fields'] = json_decode($packageOrder->fields, true);
-
-        $be = be::first();
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        $data['version'] = $version;
-
-        if ($bex->recurring_billing == 1) {
-            return view('front.subscription-confirmation', $data);
-        } else {
-            return view('front.order-confirmation', $data);
-        }
-    }
-
-    public function loadpayment($slug, $id)
-    {
-        $data['payment'] = $slug;
-        $data['pay_id'] = $id;
-        $gateway = '';
-        if ($data['pay_id'] != 0 && $data['payment'] != "offline") {
-            $gateway = PaymentGateway::findOrFail($data['pay_id']);
-        } else {
-            $gateway = OfflineGateway::findOrFail($data['pay_id']);
-        }
-        $data['gateway'] = $gateway;
-
-        return view('front.load.payment', $data);
-    }    // Redirect To Checkout Page If Payment is Cancelled
-
-
-
-    // Redirect To Success Page If Payment is Comleted
-
-    public function payreturn($packageid)
-    {
-        return redirect()->route('front.packageorder.index', $packageid)->with('success', __('Pament Compelted!'));
     }
 }

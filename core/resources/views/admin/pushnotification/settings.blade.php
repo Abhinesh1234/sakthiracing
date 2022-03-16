@@ -1,108 +1,74 @@
 @extends('admin.layout')
 
 @section('content')
-<div class="page-header">
+  <div class="page-header">
     <h4 class="page-title">Push Notification Settings</h4>
     <ul class="breadcrumbs">
-        <li class="nav-home">
-            <a href="{{route('admin.dashboard')}}">
-                <i class="flaticon-home"></i>
-            </a>
-        </li>
-        <li class="separator">
-            <i class="flaticon-right-arrow"></i>
-        </li>
-        <li class="nav-item">
-            <a href="#">Push Notification</a>
-        </li>
-        <li class="separator">
-            <i class="flaticon-right-arrow"></i>
-        </li>
-        <li class="nav-item">
-            <a href="#">Settings</a>
-        </li>
+      <li class="nav-home">
+        <a href="{{route('admin.dashboard')}}">
+          <i class="flaticon-home"></i>
+        </a>
+      </li>
+      <li class="separator">
+        <i class="flaticon-right-arrow"></i>
+      </li>
+      <li class="nav-item">
+        <a href="#">Push Notification</a>
+      </li>
+      <li class="separator">
+        <i class="flaticon-right-arrow"></i>
+      </li>
+      <li class="nav-item">
+        <a href="#">Settings</a>
+      </li>
     </ul>
-</div>
-<div class="row">
+  </div>
+  <div class="row">
     <div class="col-md-12">
-        <div class="card">
+      <div class="card">
 
-            <div class="card-header">
-                <div class="card-title">Push Notification Settings</div>
-            </div>
-            <div class="card-body pt-5 pb-5">
-                <div class="row">
-                    <div class="col-lg-6 offset-lg-3">
-                        <form id="pushSettingsForm" action="{{route('admin.pushnotification.updateSettings')}}" method="post" enctype="multipart/form-data">
-                            @csrf
-                            <div class="row">
-                                <div class="col-lg-6">
-                                    {{-- Icon Image --}}
-                                    <div class="form-group">
-                                        <label for="">Icon Image ** </label>
-                                        <br>
-                                        <div class="thumb-preview" id="thumbPreview1">
-                                            <img src="{{asset('assets/front/img/'.$bex->push_notification_icon)}}" alt="Icon Image">
-                                        </div>
-                                        <br>
-                                        <br>
-
-
-                                        <input id="fileInput1" type="hidden" name="icon">
-                                        <button id="chooseImage1" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal1">Choose Image</button>
-
-
-                                        <p class="text-warning mb-0">JPG, PNG, JPEG, SVG images are allowed</p>
-                                        @if ($errors->has('icon'))
-                                        <p class="text-danger mb-0">{{$errors->first('icon')}}</p>
-                                        @endif
-
-                                        <!-- icon LFM Modal -->
-                                        <div class="modal fade lfm-modal" id="lfmModal1" tabindex="-1" role="dialog" aria-labelledby="lfmModalTitle" aria-hidden="true">
-                                            <i class="fas fa-times-circle"></i>
-                                            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                                                <div class="modal-content">
-                                                    <div class="modal-body p-0">
-                                                        <iframe src="{{url('laravel-filemanager')}}?serial=1" style="width: 100%; height: 500px; overflow: hidden; border: none;"></iframe>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>VAPID Public Key</label>
-                                <textarea class="form-control" rows="2" disabled>{{env('VAPID_PUBLIC_KEY')}}</textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label>VAPID Private Key</label>
-                                <input type="text" class="form-control" disabled value="{{env('VAPID_PRIVATE_KEY')}}">
-                            </div>
-
-
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card-footer">
-                <div class="form-group from-show-notify row">
-                    <div class="col-12 text-center">
-
-                        @if(empty(env('VAPID_PUBLIC_KEY')) && empty(env('VAPID_PRIVATE_KEY')))
-                        <a class="btn btn-primary" href="{{route('admin.pushnotification.generateKeys')}}">Generate Keys</a>
+          <div class="card-header">
+            <div class="card-title">Push Notification Settings</div>
+          </div>
+          <div class="card-body pt-5 pb-5">
+            <div class="row">
+              <div class="col-lg-6 offset-lg-3">
+                <form id="pushSettingsForm" action="{{route('admin.pushnotification.updateSettings')}}" method="post" enctype="multipart/form-data">
+                  @csrf
+                  <div class="row">
+                    <div class="col-lg-6">
+                      <div class="form-group">
+                        <div class="col-12 mb-2">
+                          <label for="image"><strong>Icon Image **</strong></label>
+                        </div>
+                        <div class="col-md-12 showImage mb-3">
+                          <img src="{{ asset('assets/front/img/'. 'pushnotification_icon.png') . '?' . time() }}" alt="..." class="img-thumbnail">
+                        </div>
+                        <input type="file" name="file" id="image" class="form-control">
+                        @if ($errors->has('file'))
+                        <p class="mb-0 text-danger em">{{$errors->first('file')}}</p>
                         @endif
-                        <button type="submit" class="btn btn-success" form="pushSettingsForm">Update</button>
+                      </div>
                     </div>
-                </div>
-            </div>
+                  </div>
 
-        </div>
+
+
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <div class="form-group from-show-notify row">
+              <div class="col-12 text-center">
+                <button type="submit" class="btn btn-success" form="pushSettingsForm">Update</button>
+              </div>
+            </div>
+          </div>
+
+      </div>
     </div>
-</div>
+  </div>
 
 @endsection

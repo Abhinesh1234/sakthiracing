@@ -2,71 +2,41 @@
 
 namespace App\Http\Controllers\Payment;
 
-use App\Http\Controllers\Payment\PaymentController;
-use App\BasicExtended;
-use App\BasicExtra;
+use App\Http\Controllers\Admin\AdminCheckoutController;
+use App\Http\Controllers\Front\CheckoutController;
+use App\Http\Controllers\User\UserCheckoutController;
+use App\Http\Helpers\UserPermissionHelper;
+use App\Models\BasicExtended;
+use App\Models\Package;
 use Illuminate\Http\Request;
-use App\Language;
-use App\Package;
-use App\PackageOrder;
-use App\PaymentGateway;
-use App\Subscription;
+use App\Http\Controllers\Controller;
+use App\Http\Helpers\MegaMailer;
+use App\Models\Language;
+use App\Models\PaymentGateway;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Str;
 
-class PaytmController extends PaymentController
+class PaytmController extends Controller
 {
-    public function store(Request $request)
+    public function paymentProcess(Request $request, $_amount, $_item_number, $_callback_url)
     {
-        // Validation Starts
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
+        $data = PaymentGateway::whereKeyword('paytm')->first();
+        $paydata = $data->convertAutoData();
+
+        $data_for_request = $this->handlePaytmRequest($_item_number, $_amount, $_callback_url);
+
+        if ($paydata['environment'] == 'local') {
+            $paytm_txn_url = 'https://securegw-stage.paytm.in/theia/processTransaction';
         } else {
-            $currentLang = Language::where('is_default', 1)->first();
+            $paytm_txn_url = 'https://securegw.paytm.in/theia/processTransaction';
         }
-
-
-
-        $bs = $currentLang->basic_setting;
-        $be = $currentLang->basic_extended;
-        $package_inputs = $currentLang->package_inputs;
-
-        $validation = $this->orderValidation($request, $package_inputs);
-        if($validation) {
-            return $validation;
-        }
-        // Validation Ends
-
-        $bex = $currentLang->basic_extra;
-        if ($bex->base_currency_text != "INR") {
-            return redirect()->back()->with('error', 'Please Select INR Currency For Paytm.');
-        }
-
-        $po = $this->saveOrder($request, $package_inputs, 0);
-        $package = Package::find($request->package_id);
-
-        $item_number = Str::random(4) . uniqid();
-        $item_amount = (float)$package->price;
-
-
-        Session::put('order_id', $po->id);
-        Session::put('package_id', $package->id);
-        $data_for_request = $this->handlePaytmRequest($item_number, $item_amount);
-        $paytm_txn_url = 'https://securegw-stage.paytm.in/theia/processTransaction';
         $paramList = $data_for_request['paramList'];
         $checkSum = $data_for_request['checkSum'];
-
-        $be = BasicExtended::first();
-        $version = $be->theme_version;
-
-        if ($version == 'dark') {
-            $version = 'default';
-        }
-
-        return view('front.paytm', compact('paytm_txn_url', 'paramList', 'checkSum', 'version'));
+        Session::put("request", $request->all());
+        return view('front.paytm', compact('paytm_txn_url', 'paramList', 'checkSum'));
     }
 
-    public function handlePaytmRequest($order_id, $amount)
+    public function handlePaytmRequest($_item_number, $amount, $callback_url)
     {
         $data = PaymentGateway::whereKeyword('paytm')->first();
         $paydata = $data->convertAutoData();
@@ -78,13 +48,13 @@ class PaytmController extends PaymentController
         $paramList = array();
         // Create an array having all required parameters for creating checksum.
         $paramList["MID"] = $paydata['merchant'];
-        $paramList["ORDER_ID"] = $order_id;
-        $paramList["CUST_ID"] = $order_id;
+        $paramList["ORDER_ID"] = $_item_number;
+        $paramList["CUST_ID"] = $_item_number;
         $paramList["INDUSTRY_TYPE_ID"] = $paydata['industry'];
         $paramList["CHANNEL_ID"] = 'WEB';
         $paramList["TXN_AMOUNT"] = $amount;
         $paramList["WEBSITE"] = $paydata['website'];
-        $paramList["CALLBACK_URL"] = route('front.paytm.notify');
+        $paramList["CALLBACK_URL"] = $callback_url;
 
         $paytm_merchant_key = $paydata['secret'];
         //Here checksum string will return by getChecksumFromArray() function.
@@ -99,35 +69,38 @@ class PaytmController extends PaymentController
     {
         function encrypt_e($input, $ky)
         {
-            $key   = html_entity_decode($ky);
+            $key = html_entity_decode($ky);
             $iv = "@@@@&&&&####$$$$";
             $data = openssl_encrypt($input, "AES-128-CBC", $key, 0, $iv);
             return $data;
         }
+
         function decrypt_e($crypt, $ky)
         {
-            $key   = html_entity_decode($ky);
+            $key = html_entity_decode($ky);
             $iv = "@@@@&&&&####$$$$";
             $data = openssl_decrypt($crypt, "AES-128-CBC", $key, 0, $iv);
             return $data;
         }
+
         function pkcs5_pad_e($text, $blocksize)
         {
             $pad = $blocksize - (strlen($text) % $blocksize);
             return $text . str_repeat(chr($pad), $pad);
         }
+
         function pkcs5_unpad_e($text)
         {
-            $pad = ord($text[
-                strlen($text) - 1]);
+            $pad = ord($text[strlen($text) - 1]);
             if ($pad > strlen($text))
                 return false;
             return substr($text, 0, -1 * $pad);
         }
+
         function generateSalt_e($length)
         {
             $random = "";
-            srand((float) microtime() * 1000000);
+            srand((float)microtime() * 1000000);
             $data = "AbcDE123IJKLMN67QRSTUVWXYZ";
             $data .= "aBCdefghijklmn123opq45rs67tuv89wxyz";
             $data .= "0FGH45OP89";
@@ -136,12 +109,14 @@ class PaytmController extends PaymentController
             }
             return $random;
         }
+
         function checkString_e($value)
         {
             if ($value == 'null')
                 $value = '';
             return $value;
         }
+
         function getChecksumFromArray($arrayList, $key, $sort = 1)
         {
             if ($sort != 0) {
@@ -155,6 +130,7 @@ class PaytmController extends PaymentController
             $checksum = encrypt_e($hashString, $key);
             return $checksum;
         }
+
         function getChecksumFromString($str, $key)
         {
             $salt = generateSalt_e(4);
@@ -164,6 +140,7 @@ class PaytmController extends PaymentController
             $checksum = encrypt_e($hashString, $key);
             return $checksum;
         }
+
         function verifychecksum_e($arrayList, $key, $checksumvalue)
         {
             $arrayList = removeCheckSumParam($arrayList);
@@ -182,6 +159,7 @@ class PaytmController extends PaymentController
             }
             return $validFlag;
         }
+
         function verifychecksum_eFromStr($str, $key, $checksumvalue)
         {
             $paytm_hash = decrypt_e($checksumvalue, $key);
@@ -197,9 +175,10 @@ class PaytmController extends PaymentController
             }
             return $validFlag;
         }
+
         function getArray2Str($arrayList)
         {
-            $findme   = 'REFUND';
+            $findme = 'REFUND';
             $findmepipe = '|';
             $paramStr = "";
             $flag = 1;
@@ -218,6 +197,7 @@ class PaytmController extends PaymentController
             }
             return $paramStr;
         }
+
         function getArray2StrForVerify($arrayList)
         {
             $paramStr = "";
@@ -232,11 +212,13 @@ class PaytmController extends PaymentController
             }
             return $paramStr;
         }
+
         function redirect2PG($paramList, $key)
         {
             $hashString = getchecksumFromArray($paramList, $key);
             $checksum = encrypt_e($hashString, $key);
         }
+
         function removeCheckSumParam($arrayList)
         {
             if (isset($arrayList["CHECKSUMHASH"])) {
@@ -244,20 +226,24 @@ class PaytmController extends PaymentController
             }
             return $arrayList;
         }
+
         function getTxnStatus($requestParamList)
         {
             return callAPI(PAYTM_STATUS_QUERY_URL, $requestParamList);
         }
+
         function getTxnStatusNew($requestParamList)
         {
             return callNewAPI(PAYTM_STATUS_QUERY_NEW_URL, $requestParamList);
         }
+
         function initiateTxnRefund($requestParamList)
         {
             $CHECKSUM = getRefundChecksumFromArray($requestParamList, PAYTM_MERCHANT_KEY, 0);
             $requestParamList["CHECKSUM"] = $CHECKSUM;
             return callAPI(PAYTM_REFUND_URL, $requestParamList);
         }
+
         function callAPI($apiURL, $requestParamList)
         {
             $jsonResponse = "";
@@ -282,6 +268,7 @@ class PaytmController extends PaymentController
             $responseParamList = json_decode($jsonResponse, true);
             return $responseParamList;
         }
+
         function callNewAPI($apiURL, $requestParamList)
         {
             $jsonResponse = "";
@@ -306,6 +293,7 @@ class PaytmController extends PaymentController
             $responseParamList = json_decode($jsonResponse, true);
             return $responseParamList;
         }
+
         function getRefundChecksumFromArray($arrayList, $key, $sort = 1)
         {
             if ($sort != 0) {
@@ -319,6 +307,7 @@ class PaytmController extends PaymentController
             $checksum = encrypt_e($hashString, $key);
             return $checksum;
         }
+
         function getRefundArray2Str($arrayList)
         {
             $findmepipe = '|';
@@ -338,6 +327,7 @@ class PaytmController extends PaymentController
             }
             return $paramStr;
         }
+
         function callRefundAPI($refundApiURL, $requestParamList)
         {
             $jsonResponse = "";
@@ -355,44 +345,99 @@ class PaytmController extends PaymentController
             $headers[] = 'Content-Type: application/json';
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
             $jsonResponse = curl_exec($ch);
-            $responseParamList = json_decode($jsonResponse, true);
-            return $responseParamList;
+            return json_decode($jsonResponse, true);
         }
     }
 
-    public function notify(Request $request)
+    public function paymentStatus(Request $request)
     {
-        if ('TXN_SUCCESS' === $request['STATUS']) {
-            $bex = BasicExtra::first();
-
-            if ($bex->recurring_billing == 1) {
-                $sub = Subscription::find(Session::get('order_id'));
-                $package = Package::find(Session::get('package_id'));
-                $po = $this->subFinalize($sub, $package);
-            } else {
-                $po = PackageOrder::findOrFail(Session::get('order_id'));
-                $data['payment_status'] = 1;
-                $po->update($data);
-
-            }
-
-            if (session()->has('lang')) {
-                $currentLang = Language::where('code', session()->get('lang'))->first();
-            } else {
-                $currentLang = Language::where('is_default', 1)->first();
-            }
-            $be = $currentLang->basic_extended;
-            // sending Mails
-            $this->sendMails($po, $be, $bex);
-
-            session()->flash('success', 'Payment completed!');
-            return redirect()->route('front.packageorder.confirmation', [Session::get('package_id'), $po->id]);
-        } else if ('TXN_FAILURE' === $request['STATUS']) {
-            return 'failed';
-            session()->flash('error', 'Something is wrong!');
-            return redirect(route('front.payment.cancle', Session::get('package_id')));
+        $requestData = Session::get('request');
+        if (session()->has('lang')) {
+            $currentLang = Language::where('code', session()->get('lang'))->first();
+        } else {
+            $currentLang = Language::where('is_default', 1)->first();
         }
+        $be = $currentLang->basic_extended;
+        $bs = $currentLang->basic_setting;
+        $paymentFor = Session::get('paymentFor');
+        if ($request["STATUS"] === "TXN_FAILURE") {
+            $paymentFor = Session::get('paymentFor');
+            session()->flash('warning', __('cancel_payment'));
+            if($paymentFor == "membership"){
+                return redirect()->route('front.register.view',['status' => $requestData['package_type'],'id' => $requestData['package_id']])->withInput($requestData);
+            }else{
+                return redirect()->route('user.plan.extend.checkout',['package_id' => $requestData['package_id']])->withInput($requestData);
+            }
+        } elseif ($request['STATUS'] === 'TXN_SUCCESS') {
+            $package = Package::find($requestData['package_id']);
+            $transaction_id = UserPermissionHelper::uniqidReal(8);
+            $transaction_details = json_encode($request);
+            if ($paymentFor == "membership") {
+                $amount = $requestData['price'];
+                $password = $requestData['password'];
+                $checkout = new CheckoutController();
+                $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount,$be,$password);
 
+                $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
+                $activation = Carbon::parse($lastMemb->start_date);
+                $expire = Carbon::parse($lastMemb->expire_date);
+                $file_name = $this->makeInvoice($requestData,"membership",$user,$password,$amount,"PayTm",$requestData['phone'],$be->base_currency_symbol_position,$be->base_currency_symbol,$be->base_currency_text,$transaction_id,$package->title);
 
+                $mailer = new MegaMailer();
+                $data = [
+                    'toMail' => $user->email,
+                    'toName' => $user->fname,
+                    'username' => $user->username,
+                    'package_title' => $package->title,
+                    'package_price' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $package->price . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
+                    'activation_date' => $activation->toFormattedDateString(),
+                    'expire_date' => Carbon::parse($expire->toFormattedDateString())->format('Y') == '9999' ? 'Lifetime' : $expire->toFormattedDateString(),
+                    'membership_invoice' => $file_name,
+                    'website_title' => $bs->website_title,
+                    'templateType' => 'registration_with_premium_package',
+                    'type' => 'registrationWithPremiumPackage'
+                ];
+                $mailer->mailFromAdmin($data);
+
+                session()->flash('success', __('successful_payment'));
+                Session::forget('request');
+                Session::forget('paymentFor');
+                return redirect()->route('success.page');
+            }
+            elseif($paymentFor == "extend") {
+                $amount = $requestData['price'];
+                $password = uniqid('qrcode');
+                $checkout = new UserCheckoutController();
+                $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount,$be,$password);
+
+                
+
+                $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
+                $activation = Carbon::parse($lastMemb->start_date);
+                $expire = Carbon::parse($lastMemb->expire_date);
+                $file_name = $this->makeInvoice($requestData,"extend",$user,$password,$amount,$requestData["payment_method"],$user->phone_number,$be->base_currency_symbol_position,$be->base_currency_symbol,$be->base_currency_text,$transaction_id,$package->title);
+
+                $mailer = new MegaMailer();
+                $data = [
+                    'toMail' => $user->email,
+                    'toName' => $user->fname,
+                    'username' => $user->username,
+                    'package_title' => $package->title,
+                    'package_price' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $package->price . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
+                    'activation_date' => $activation->toFormattedDateString(),
+                    'expire_date' => Carbon::parse($expire->toFormattedDateString())->format('Y') == '9999' ? 'Lifetime' : $expire->toFormattedDateString(),
+                    'membership_invoice' => $file_name,
+                    'website_title' => $bs->website_title,
+                    'templateType' => 'membership_extend',
+                    'type' => 'membershipExtend'
+                ];
+                $mailer->mailFromAdmin($data);
+
+                session()->flash('success', __('successful_payment'));
+                Session::forget('request');
+                Session::forget('paymentFor');
+                return redirect()->route('success.page');
+            }
+        }
     }
 }

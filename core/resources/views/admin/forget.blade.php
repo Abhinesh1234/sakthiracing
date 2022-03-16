@@ -7,24 +7,7 @@
   	<link rel="icon" href="{{asset('assets/front/img/'.$bs->favicon)}}">
     <link rel="stylesheet" href="{{asset('assets/admin/css/bootstrap.min.css')}}">
     <link rel="stylesheet" href="{{asset('assets/admin/css/login.css')}}">
-    <style>
-    .login-page {
-        width: 600px;
-    }
-    .form {
-        max-width: 600px;
-    }
-    .form button {
-        width: 35%;
-        padding: 12px;
-    }
-    p.back-link {
-        font-size: 14px;
-        text-transform: uppercase;
-        margin-bottom: 0px;
-        margin-top: 12px;
-    }
-    </style>
+    <link rel="stylesheet" href="{{asset('assets/admin/css/forget.css')}}">
   </head>
   <body>
     <div class="login-page">
@@ -33,7 +16,7 @@
       </div>
       <div class="form">
         @if (session()->has('success'))
-          <div class="alert alert-success fade show" role="alert" style="font-size: 14px;">
+          <div class="alert alert-success fade show" role="alert">
             <strong>Success!</strong> {{session('success')}}
           </div>
         @endif
@@ -62,25 +45,5 @@
     <!-- Bootstrap Notify -->
     <script src="{{asset('assets/admin/js/plugin/bootstrap-notify/bootstrap-notify.min.js')}}"></script>
 
-    @if (session()->has('warning'))
-    <script>
-      var content = {};
-
-      content.message = '{{session('warning')}}';
-      content.title = 'Sorry!';
-      content.icon = 'fa fa-bell';
-
-      $.notify(content,{
-        type: 'warning',
-        placement: {
-          from: 'top',
-          align: 'right'
-        },
-        showProgressbar: true,
-        time: 1000,
-        delay: 4000,
-      });
-    </script>
-    @endif
   </body>
 </html>

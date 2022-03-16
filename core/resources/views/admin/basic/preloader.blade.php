@@ -40,45 +40,27 @@
                         <label>Status</label>
                         <div class="selectgroup w-100">
                            <label class="selectgroup-item">
-                            <input type="radio" name="preloader_status" value="1" class="selectgroup-input" {{$bex->preloader_status == 1 ? 'checked' : ''}}>
+                            <input type="radio" name="preloader_status" value="1" class="selectgroup-input" {{$abs->preloader_status == 1 ? 'checked' : ''}}>
                             <span class="selectgroup-button">Active</span>
                            </label>
                            <label class="selectgroup-item">
-                            <input type="radio" name="preloader_status" value="0" class="selectgroup-input" {{$bex->preloader_status == 0 ? 'checked' : ''}}>
+                            <input type="radio" name="preloader_status" value="0" class="selectgroup-input" {{$abs->preloader_status == 0 ? 'checked' : ''}}>
                             <span class="selectgroup-button">Deactive</span>
                            </label>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="">Preloader ** </label>
-                        <br>
-                        <div class="thumb-preview" id="thumbPreview1">
-                            <img src="{{asset('assets/front/img/' . $bex->preloader)}}" alt="Preloader">
-                        </div>
-                        <br>
-                        <br>
-
-
-                        <input id="fileInput1" type="hidden" name="preloader">
-                        <button id="chooseImage1" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal1">Choose Image</button>
-
-
-                        <p class="text-warning mb-0">JPG, PNG, JPEG, GIF, SVG images are allowed</p>
-                        @if ($errors->has('preloader'))
-                        <p class="text-danger mb-0">{{$errors->first('preloader')}}</p>
-                        @endif
-
-                        <!-- preloader LFM Modal -->
-                        <div class="modal fade lfm-modal" id="lfmModal1" tabindex="-1" role="dialog" aria-labelledby="lfmModalTitle" aria-hidden="true">
-                            <i class="fas fa-times-circle"></i>
-                            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-body p-0">
-                                        <iframe src="{{url('laravel-filemanager')}}?serial=1" style="width: 100%; height: 500px; overflow: hidden; border: none;"></iframe>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                      <div class="col-12 mb-2">
+                        <label for="image"><strong> Preloader **</strong></label>
+                      </div>
+                      <div class="col-md-12 showImage mb-3">
+                        <img src="{{$abs->preloader ? asset('assets/front/img/'.$abs->preloader) :  asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                      </div>
+                      <input type="file" name="file" id="image" class="form-control">
+                      @if ($errors->has('file'))
+                        <p class="text-danger mb-0">{{$errors->first('file')}}</p>
+                      @endif
+                      <p class="text-warning mb-0">Only GIF, JPG, JPEG, PNG file formats are allowed</p>
                     </div>
                   </div>
                 </div>

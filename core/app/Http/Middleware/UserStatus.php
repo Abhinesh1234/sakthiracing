@@ -21,10 +21,6 @@ class UserStatus
             Auth::guard('web')->logout();
             Session::flash('error','Your account has been banned!');
             return redirect(route('front.index'));
-        } elseif(strtolower(Auth::user()->email_verified) == 'no'){
-            Auth::guard('web')->logout();
-            Session::flash('error','Your email is not verified!');
-            return redirect(route('front.index'));
         }
         return $next($request);
     }

@@ -12,6 +12,6 @@ class CheckForMaintenanceMode extends Middleware
      * @var array
      */
     protected $except = [
-        'admin/*', 'admin', 'laravel-filemanager', 'laravel-filemanager/*'
+        'admin/*', 'admin'
     ];
 }

@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-
-use App\BasicExtra;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Page;
-use App\Language;
+use App\Models\Page;
+use App\Models\Language;
+use Purifier;
 use Session;
 use Validator;
 
@@ -18,33 +17,14 @@ class PageController extends Controller
         $lang = Language::where('code', $request->language)->first();
         $lang_id = $lang->id;
         $data['apages'] = Page::where('language_id', $lang_id)->orderBy('id', 'DESC')->get();
-
         $data['lang_id'] = $lang_id;
         return view('admin.page.index', $data);
     }
 
-    public function settings(Request $request)
+    public function create()
     {
-        $data['abex'] = BasicExtra::first();
-
-        return view('admin.page.settings', $data);
-    }
-
-    public function updateSettings(Request $request)
-    {
-        $bexs = BasicExtra::all();
-
-        foreach ($bexs as $key => $bex) {
-            $bex->custom_page_pagebuilder = $request->custom_page_pagebuilder;
-            $bex->save();
-        }
-
-        Session::flash('success', "Page settings updated!");
-        return back();
-    }
-
-    public function create() {
-        return view('admin.page.create');
+        $data['tpages'] = Page::where('language_id', 0)->get();
+        return view('admin.page.create', $data);
     }
 
     public function store(Request $request)
@@ -57,20 +37,10 @@ class PageController extends Controller
 
         $rules = [
             'language_id' => 'required',
-            'name' => [
-                'required',
-                'max:25',
-                function ($attribute, $value, $fail) use ($slug) {
-                    $pages = Page::all();
-                    foreach ($pages as $key => $page) {
-                        if (strtolower($slug) == strtolower($page->slug)) {
-                            $fail('The title field must be unique.');
-                        }
-                    }
-                }
-            ],
+            'name' => 'required',
+            'title' => 'required',
+            'body' => 'required',
             'status' => 'required',
-            'serial_number' => 'required|integer',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
@@ -79,21 +49,15 @@ class PageController extends Controller
             return response()->json($validator->errors());
         }
 
-        $bex = BasicExtra::firstOrFail();
-
         $page = new Page;
         $page->language_id = $request->language_id;
         $page->name = $request->name;
-        $page->title = $request->breadcrumb_title;
-        $page->subtitle = $request->breadcrumb_subtitle;
+        $page->title = $request->title;
         $page->slug = $slug;
+        $page->body = Purifier::clean($request->body);
         $page->status = $request->status;
-        $page->serial_number = $request->serial_number;
         $page->meta_keywords = $request->meta_keywords;
         $page->meta_description = $request->meta_description;
-        if ($bex->custom_page_pagebuilder == 0) {
-            $page->body = $request->body;
-        }
         $page->save();
 
         Session::flash('success', 'Page created successfully!');
@@ -109,23 +73,12 @@ class PageController extends Controller
     public function update(Request $request)
     {
         $slug = make_slug($request->name);
-        $pageID = $request->pageid;
 
         $rules = [
-            'name' => [
-                'required',
-                'max:25',
-                function ($attribute, $value, $fail) use ($slug, $pageID) {
-                    $pages = Page::all();
-                    foreach ($pages as $key => $page) {
-                        if ($page->id != $pageID && strtolower($slug) == strtolower($page->slug)) {
-                            $fail('The title field must be unique.');
-                        }
-                    }
-                }
-            ],
-            'status' => 'required',
-            'serial_number' => 'required|integer',
+            'name' => 'required',
+            'title' => 'required',
+            'body' => 'required',
+            'status' => 'required'
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -134,20 +87,16 @@ class PageController extends Controller
             return response()->json($validator->errors());
         }
 
-        $bex = BasicExtra::firstOrFail();
+        $pageID = $request->pageid;
 
         $page = Page::findOrFail($pageID);
         $page->name = $request->name;
-        $page->title = $request->breadcrumb_title;
-        $page->subtitle = $request->breadcrumb_subtitle;
+        $page->title = $request->title;
         $page->slug = $slug;
+        $page->body = Purifier::clean($request->body);
         $page->status = $request->status;
-        $page->serial_number = $request->serial_number;
         $page->meta_keywords = $request->meta_keywords;
         $page->meta_description = $request->meta_description;
-        if ($bex->custom_page_pagebuilder == 0) {
-            $page->body = $request->body;
-        }
         $page->save();
 
         Session::flash('success', 'Page updated successfully!');
@@ -176,55 +125,4 @@ class PageController extends Controller
         return "success";
     }
 
-    public function uploadPbImage(Request $request)
-    {
-        $files = $request->file('files');
-        $assets = [];
-
-        foreach ($files as $key => $file) {
-            $directory = "assets/front/img/pagebuilder/";
-            @mkdir($directory, 0775, true);
-            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move($directory, $filename);
-
-
-            $path = url($directory. $filename);
-            $name = $file->getClientOriginalName();
-
-            $assets[] = [
-                'name' => $name,
-                'type' => 'image',
-                'src' =>  $path,
-                'height' => 350,
-                'width' => 250
-            ];
-        }
-
-        return response()->json(['data' => $assets]);
-    }
-
-    public function removePbImage(Request $request) {
-        $path = str_replace(url('/') . '/', '', $request->path);
-        @unlink($path);
-    }
-
-    public function uploadPbTui(Request $request) {
-        $image = $request->base_64;  // your base64 encoded
-        $image = str_replace('data:image/png;base64,', '', $image);
-        $image = str_replace(' ', '+', $image);
-        $imageName = uniqid().'.'.'png';
-
-        $path = 'assets/front/img/pagebuilder/' . $imageName;
-        \File::put($path, base64_decode($image));
-
-        $assets[] = [
-            'name' => $imageName,
-            'type' => 'image',
-            'src' =>  url($path),
-            'height' => 350,
-            'width' => 250
-        ];
-
-        return response()->json(['data' => $assets]);
-    }
 }

@@ -62,128 +62,45 @@
         </div>
         <div class="card-body pt-5 pb-4">
           <div class="row">
-            <div class="col-lg-8 offset-lg-2">
+            <div class="col-lg-6 offset-lg-3">
 
               <form id="ajaxForm" action="{{route('admin.introsection.update', $lang_id)}}" method="post">
                 @csrf
-
                 <div class="row">
-                    <div class="{{$be->theme_version == 'logistic' || $be->theme_version == 'lawyer' ? 'col-lg-6' : 'col-lg-12'}}">
-
-                        {{-- Image Part --}}
-                        <div class="form-group">
-                            <label for="">Image ** </label>
-                            <br>
-                            <div class="thumb-preview" id="thumbPreview1">
-                                <img src="{{asset('assets/front/img/'.$abs->intro_bg)}}" alt="Image">
-                            </div>
-                            <br>
-                            <br>
-
-
-                            <input id="fileInput1" type="hidden" name="image">
-                            <button id="chooseImage1" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal1">Choose Image</button>
-
-
-                            <p class="text-warning mb-0">JPG, PNG, JPEG, SVG images are allowed</p>
-                            <p class="text-danger mb-0 em" id="errimage"></p>
-
-                            <!-- Image LFM Modal -->
-                            <div class="modal fade lfm-modal" id="lfmModal1" tabindex="-1" role="dialog" aria-labelledby="lfmModalTitle" aria-hidden="true">
-                                <i class="fas fa-times-circle"></i>
-                                <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                                    <div class="modal-content">
-                                        <div class="modal-body p-0">
-                                            <iframe src="{{url('laravel-filemanager')}}?serial=1" style="width: 100%; height: 500px; overflow: hidden; border: none;"></iframe>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                  <div class="col-lg-12">
+                    <div class="form-group">
+                      <div class="col-12 mb-2">
+                        <label for="image"><strong>Main Image **</strong></label>
+                      </div>
+                      <div class="col-md-12 showImage mb-3">
+                        <img src="{{$abs->intro_main_image ? asset('assets/front/img/'.$abs->intro_main_image) : asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                      </div>
+                      <input type="file" name="intro_main_image" id="image" class="form-control image">
+                      <p id="errintro_main_image" class="mb-0 text-danger em"></p>
                     </div>
-                    @if ($be->theme_version == 'logistic' || $be->theme_version == 'lawyer')
-                        <div class="col-lg-6">
-
-                            {{-- Image 2 Part --}}
-                            <div class="form-group">
-                                <label for="">Image 2 ** </label>
-                                <br>
-                                <div class="thumb-preview" id="thumbPreview2">
-                                    <img src="{{asset('assets/front/img/'.$abe->intro_bg2)}}" alt="Image">
-                                </div>
-                                <br>
-                                <br>
-
-
-                                <input id="fileInput2" type="hidden" name="image_2">
-                                <button id="chooseImage2" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal2">Choose Image</button>
-
-
-                                <p class="text-warning mb-0">JPG, PNG, JPEG, SVG images are allowed</p>
-                                <p class="text-danger mb-0 em" id="errimage_2"></p>
-
-                                <!-- Image 2 LFM Modal -->
-                                <div class="modal fade lfm-modal" id="lfmModal2" tabindex="-1" role="dialog" aria-labelledby="lfmModalTitle" aria-hidden="true">
-                                    <i class="fas fa-times-circle"></i>
-                                    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-body p-0">
-                                                <iframe src="{{url('laravel-filemanager')}}?serial=2" style="width: 100%; height: 500px; overflow: hidden; border: none;"></iframe>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
+                  </div>
                 </div>
 
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                          <label for="">Title **</label>
-                          <input type="text" class="form-control" name="intro_section_title" value="{{$abs->intro_section_title}}">
-                          <p id="errintro_section_title" class="em text-danger mb-0"></p>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                          <label for="">Video Link </label>
-                          <input type="text" class="form-control ltr" name="intro_section_video_link" value="{{$abs->intro_section_video_link}}">
-                          <p class="text-warning mb-0">Link will be formatted automatically after submitting form.</p>
-                          <p id="errintro_section_video_link" class="em text-danger mb-0"></p>
-                        </div>
-                    </div>
+                
+                <div class="form-group">
+                  <label for="">Title </label>
+                  <input type="text" class="form-control" name="intro_title" value="{{$abs->intro_title}}">
+                  <p id="errintro_title" class="em text-danger mb-0"></p>
                 </div>
 
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="form-group">
-                            <label for="">Text **</label>
-                            <input name="intro_section_text" class="form-control" value="{{$abs->intro_section_text}}">
-                            <p id="errintro_section_text" class="em text-danger mb-0"></p>
-                        </div>
-                    </div>
+                <div class="form-group">
+                  <label for="">Subtitle</label>
+                  <input type="text" class="form-control" name="intro_subtitle" value="{{$abs->intro_subtitle}}">
+                  <p id="errintro_subtitle" class="em text-danger mb-0"></p>
                 </div>
 
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="">Button Text</label>
-                            <input type="text" class="form-control" name="intro_section_button_text" value="{{$abs->intro_section_button_text}}">
-                            <p id="errintro_section_button_text" class="em text-danger mb-0"></p>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="">Button URL</label>
-                            <input type="text" class="form-control ltr" name="intro_section_button_url" value="{{$abs->intro_section_button_url}}">
-                            <p id="errintro_section_button_url" class="em text-danger mb-0"></p>
-                        </div>
-                    </div>
+                <div class="form-group">
+                  <label for="">Text </label>
+                  <textarea name="intro_text" class="form-control" rows="4">{{$abs->intro_text}}</textarea>
+                  <p id="errintro_text" class="em text-danger mb-0"></p>
                 </div>
+
               </form>
-
             </div>
           </div>
         </div>
@@ -201,4 +118,36 @@
     </div>
   </div>
 
+@endsection
+
+
+@section('scripts')
+<script>
+$(function ($) {
+  "use strict";
+
+    $(".remove-image").on('click', function(e) {
+        e.preventDefault();
+        $(".request-loader").addClass("show");
+
+        let type = $(this).data('type');
+        let fd = new FormData();
+        fd.append('type', type);
+        fd.append('language_id', {{$abs->language->id}});
+
+        $.ajax({
+            url: "{{route('admin.introsection.img.rmv')}}",
+            data: fd,
+            type: 'POST',
+            contentType: false,
+            processData: false,
+            success: function(data) {
+                if (data == "success") {
+                    window.location = "{{url()->current() . '?language=' . $abs->language->code}}";
+                }
+            }
+        })
+    });
+});
+</script>
 @endsection

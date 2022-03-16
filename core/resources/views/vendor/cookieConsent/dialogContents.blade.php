@@ -7,7 +7,7 @@
         </span>
 
         <button class="js-cookie-consent-agree cookie-consent__agree">
-            {!! $be->cookie_alert_button_text !!}
+            {{ $be->cookie_alert_button_text }}
         </button>
       </div>
     </div>

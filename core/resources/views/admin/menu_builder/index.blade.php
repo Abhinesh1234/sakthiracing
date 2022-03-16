@@ -5,7 +5,7 @@
 @endsection
 
 @php
-$selLang = \App\Language::where('code', request()->input('language'))->first();
+$selLang = \App\Models\Language::where('code', request()->input('language'))->first();
 @endphp
 @if(!empty($selLang) && $selLang->rtl == 1)
 @section('styles')
@@ -69,29 +69,19 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
                             <div class="card-body">
                                 <ul class="list-group">
                                     <li class="list-group-item">{{__('Home')}} <a data-text="{{__('Home')}}" data-type="home" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-                                    <li class="list-group-item">{{__('Services')}}
-                                        <span class="badge badge-dark">Non Mega Menu</span>
-                                        <a data-text="{{__('Services')}}" data-type="services" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
+                                    <li class="list-group-item">{{__('Profiles')}}
+                                        <a data-text="{{__('Profiles')}}" data-type="profiles" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
+                                    </li>
+                                    <li class="list-group-item">{{__('Pricing')}}
+                                        <a data-text="{{__('Pricing')}}" data-type="pricing" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
+                                    </li>
+                                    <li class="list-group-item">{{__('Blogs')}}
+                                        <a data-text="{{__('Blogs')}}" data-type="blogs" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
                                     </li>
 
-                                    <li class="list-group-item">
-                                        {{__('Services')}}
-                                        <span class="badge badge-danger">Mega Menu</span>
-                                        <a data-text="{{__('Services')}}" data-type="services-megamenu" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                    </li>
+                                    <li class="list-group-item">{{__('FAQs')}} <a data-text="{{__('FAQs')}}" data-type="faq" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
 
-                                    <li class="list-group-item">{{__('Packages')}} <a data-text="{{__('Packages')}}" data-type="packages" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-                                    <li class="list-group-item">
-                                        {{__('Portfolios')}}
-                                        <span class="badge badge-dark">Non Mega Menu</span>
-                                        <a data-text="{{__('Portfolios')}}" data-type="portfolios" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                    </li>
-
-                                    <li class="list-group-item">
-                                        {{__('Portfolios')}}
-                                        <span class="badge badge-danger">Mega Menu</span>
-                                        <a data-text="{{__('Portfolios')}}" data-type="portfolios-megamenu" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                    </li>
+                                    <li class="list-group-item">{{__('Contact')}} <a data-text="{{__('Contact')}}" data-type="contact" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
 
                                     @foreach ($pages as $page)
                                     <li class="list-group-item">
@@ -99,91 +89,6 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
                                         <a data-text="{{$page->name}}" data-type="{{$page->id}}" data-custom="yes" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
                                     </li>
                                     @endforeach
-
-                                    <li class="list-group-item">{{__('Team Members')}} <a data-text="{{__('Team Members')}}" data-type="team" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-                                    <li class="list-group-item">{{__('Career')}} <a data-text="{{__('Career')}}" data-type="career" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-
-                                    @if ($bex->is_donation == 1)
-                                        <li class="list-group-item">
-                                            {{__('Courses')}}
-                                            <span class="badge badge-dark">Non Mega Menu</span>
-                                            <a data-text="{{__('Courses')}}" data-type="courses" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                        </li>
-                                        <li class="list-group-item">
-                                            {{__('Courses')}}
-                                            <span class="badge badge-danger">Mega Menu</span>
-                                            <a data-text="{{__('Courses')}}" data-type="courses-megamenu" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                        </li>
-                                    @endif
-
-                                    @if ($bex->is_donation == 1)
-                                        <li class="list-group-item">
-                                            {{__('Causes')}}
-                                            <span class="badge badge-dark">Non Mega Menu</span>
-                                            <a data-text="{{__('Causes')}}" data-type="causes" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                        </li>
-                                        <li class="list-group-item">
-                                            {{__('Causes')}}
-                                            <span class="badge badge-danger">Mega Menu</span>
-                                            <a data-text="{{__('Causes')}}" data-type="causes-megamenu" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                        </li>
-                                    @endif
-
-                                    @if ($bex->is_event == 1)
-
-                                        <li class="list-group-item">
-                                            {{__('Events')}}
-                                            <span class="badge badge-dark">Non Mega Menu</span>
-                                            <a data-text="{{__('Events')}}" data-type="events" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                        </li>
-                                        <li class="list-group-item">
-                                            {{__('Events')}}
-                                            <span class="badge badge-danger">Mega Menu</span>
-                                            <a data-text="{{__('Events')}}" data-type="events-megamenu" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                        </li>
-                                    @endif
-
-                                    <li class="list-group-item">{{__('Knowledgebase')}} <a data-text="{{__('Knowledgebase')}}" data-type="knowledgebase" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-                                    <li class="list-group-item">{{__('Event Calendar')}} <a data-text="{{__('Event Calendar')}}" data-type="calendar" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-                                    <li class="list-group-item">{{__('Gallery')}} <a data-text="{{__('Gallery')}}" data-type="gallery" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-                                    <li class="list-group-item">{{__('FAQ')}} <a data-text="{{__('FAQ')}}" data-type="faq" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-
-
-                                    @if ($bex->is_shop == 1)
-
-                                        <li class="list-group-item">
-                                            {{__('Products')}}
-                                            <span class="badge badge-danger">Mega Menu</span>
-                                            <a data-text="{{__('Products')}}" data-type="products-megamenu" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                        </li>
-                                        <li class="list-group-item">
-                                            {{__('Products')}}
-                                            <span class="badge badge-dark">Non Mega Menu</span>
-                                            <a data-text="{{__('Products')}}" data-type="products" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                        </li>
-                                    @endif
-
-
-                                    @if ($bex->is_shop == 1 && $bex->catalog_mode == 0)
-                                        <li class="list-group-item">{{__('Cart')}} <a data-text="{{__('Cart')}}" data-type="cart" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-                                        <li class="list-group-item">{{__('Checkout')}} <a data-text="{{__('Checkout')}}" data-type="checkout" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-                                    @endif
-
-                                    <li class="list-group-item">
-                                        {{__('Blogs')}}
-                                        <span class="badge badge-dark">Non Mega Menu</span>
-                                        <a data-text="{{__('Blogs')}}" data-type="blogs" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                    </li>
-                                    <li class="list-group-item">
-                                        {{__('Blogs')}}
-                                        <span class="badge badge-danger">Mega Menu</span>
-                                        <a data-text="{{__('Blogs')}}" data-type="blogs-megamenu" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a>
-                                    </li>
-
-
-                                    <li class="list-group-item">{{__('RSS News')}} <a data-text="{{__('RSS News')}}" data-type="rss" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-                                    <li class="list-group-item">{{__('Feedback')}} <a data-text="{{__('Feedback')}}" data-type="feedback" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
-                                    <li class="list-group-item">{{__('Contact')}} <a data-text="{{__('Contact')}}" data-type="contact" class="addToMenus btn btn-primary btn-sm float-right" href="">Add to Menus</a></li>
                                 </ul>
                             </div>
                         </div>
@@ -248,12 +153,6 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
                                 </ul>
                             </div>
                         </div>
-                        {{-- <div class="card">
-                            <div class="card-body">
-                                <div class="form-group"><textarea id="out" class="form-control" cols="50" rows="10"></textarea>
-                                </div>
-                            </div>
-                        </div> --}}
                     </div>
                 </div>
             </div>
@@ -276,124 +175,11 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
 
 @section('scripts')
 <script type="text/javascript" src="{{asset('assets/admin/js/plugin/jquery-menu-editor/jquery-menu-editor.js')}}"></script>
-<script type="text/javascript" src="{{asset('assets/admin/js/plugin/bootstrap-iconpicker/iconset/fontawesome5-3-1.min.js')}}"></script>
-<script type="text/javascript" src="{{asset('assets/admin/js/plugin/bootstrap-iconpicker/bootstrap-iconpicker.min.js')}}"></script>
 <script>
-    function disableWithUrl() {
-        $("#withUrl input").removeClass('item-menu');
-        $("#withUrl select").removeClass('item-menu');
-    }
-
-    function enableWithUrl() {
-        $("#withUrl input").addClass('item-menu');
-        $("#withUrl select").addClass('item-menu');
-    }
-
-    function disableWithoutUrl() {
-        $("#withoutUrl input").removeClass('item-menu');
-        $("#withoutUrl select").removeClass('item-menu');
-    }
-
-    function enableWithoutUrl() {
-        $("#withoutUrl input").addClass('item-menu');
-        $("#withoutUrl select").addClass('item-menu');
-    }
-
-    function bootnotify(message, title, type) {
-        var content = {};
-
-        content.message = message;
-        content.title = title;
-        content.icon = 'fa fa-bell';
-
-        $.notify(content, {
-            type: type,
-            placement: {
-                from: 'top',
-                align: 'right'
-            },
-            showProgressbar: true,
-            time: 1000,
-            allow_dismiss: true,
-            delay: 4000,
-        });
-    }
-
-    jQuery(document).ready(function () {
-        /* =============== DEMO =============== */
-        // menu items
-        var arrayjson = {!! json_encode($prevMenu) !!};
-
-        // icon picker options
-        var iconPickerOptions = {searchText: "Buscar...", labelHeader: "{0}/{1}"};
-        // sortable list options
-        var sortableListOptions = {
-            placeholderCss: {'background-color': "#cccccc"}
-        };
-
-        var editor = new MenuEditor('myEditor', {listOptions: sortableListOptions, iconPicker: iconPickerOptions});
-        editor.setForm($('#frmEdit'));
-        editor.setUpdateButton($('#btnUpdate'));
-        // $('#btnReload').on('click', function () {
-
-            editor.setData({!! $prevMenu !!});
-            // });
-
-            $('#btnOutput').on('click', function () {
-                var str = editor.getString();
-                let fd = new FormData();
-                // fd.append('language_id', );
-                fd.append('str', str);
-                fd.append('language_id', {{$lang_id}});
-
-                $.ajax({
-                    url: "{{route('admin.menu_builder.update')}}",
-                    type: 'POST',
-                    data: fd,
-                    contentType: false,
-                    processData: false,
-                    success: function(data) {
-                        console.log(data);
-                        if(data.status == 'error') {
-                            bootnotify(data.message, 'Warning!', 'warning');
-                        } else {
-                            bootnotify(data.message, 'Success!', 'success');
-                        }
-                    }
-                });
-            });
-
-            $("#btnUpdate").click(function(){
-                disableWithoutUrl();
-                editor.update();
-                enableWithoutUrl();
-            });
-
-            $('#btnAdd').click(function(){
-                disableWithoutUrl();
-                $("input[name='type']").val('custom');
-                editor.add();
-                enableWithoutUrl();
-            });
-            /* ====================================== */
-
-
-
-            // when menu is chosen from readymade menus list
-            $(".addToMenus").on('click', function(e) {
-                e.preventDefault();
-                disableWithUrl();
-                $("input[name='type']").val($(this).data('type'));
-                $("#withoutUrl input[name='text']").val($(this).data('text'));
-                $("#withoutUrl input[name='target']").val('_self');
-                editor.add();
-                enableWithUrl();
-
-                if ($(this).data('type').indexOf('megamenu') > -1) {
-                    $("#myEditor").find("span.txt").last().after(" <span class='ml-2 badge badge-danger'>Mega Menu</span>");
-                }
-
-            });
-        });
-    </script>
-    @endsection
+    "use strict";
+    var prevMenus = @php echo json_encode($prevMenu) @endphp;
+    var langid = {{$lang_id}};
+    var menuUpdate = "{{route('admin.menu_builder.update')}}";
+</script>
+<script type="text/javascript" src="{{asset('assets/admin/js/menu-builder.js')}}"></script>
+@endsection

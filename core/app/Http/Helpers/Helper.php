@@ -1,9 +1,13 @@
 <?php
 
-use App\BasicExtra;
-use App\Page;
+use App\Http\Helpers\UserPermissionHelper;
+use App\Models\Language;
+use App\Models\Page;
+use App\Models\User;
+use App\Models\User\UserCustomDomain;
+use Carbon\Carbon;
 
-if (! function_exists('setEnvironmentValue')) {
+if (!function_exists('setEnvironmentValue')) {
     function setEnvironmentValue(array $values)
     {
 
@@ -24,46 +28,80 @@ if (! function_exists('setEnvironmentValue')) {
                 } else {
                     $str = str_replace($oldLine, "{$envKey}={$envValue}", $str);
                 }
-
             }
         }
 
         $str = substr($str, 0, -1);
         if (!file_put_contents($envFile, $str)) return false;
         return true;
-
     }
 }
 
 
-if (! function_exists('convertUtf8')) {
-    function convertUtf8( $value ) {
+if (!function_exists('replaceBaseUrl')) {
+    function replaceBaseUrl($html)
+    {
+        $startDelimiter = 'src="';
+        $endDelimiter = '/assets/front/img/summernote';
+        $startDelimiterLength = strlen($startDelimiter);
+        $endDelimiterLength = strlen($endDelimiter);
+        $startFrom = $contentStart = $contentEnd = 0;
+        while (false !== ($contentStart = strpos($html, $startDelimiter, $startFrom))) {
+            $contentStart += $startDelimiterLength;
+            $contentEnd = strpos($html, $endDelimiter, $contentStart);
+            if (false === $contentEnd) {
+                break;
+            }
+            $html = substr_replace($html, url('/'), $contentStart, $contentEnd - $contentStart);
+            $startFrom = $contentEnd + $endDelimiterLength;
+        }
+
+        return $html;
+    }
+}
+
+
+if (!function_exists('convertUtf8')) {
+    function convertUtf8($value)
+    {
         return mb_detect_encoding($value, mb_detect_order(), true) === 'UTF-8' ? $value : mb_convert_encoding($value, 'UTF-8');
     }
 }
 
 
-if (! function_exists('make_slug')) {
-    function make_slug($string) {
+if (!function_exists('make_slug')) {
+    function make_slug($string)
+    {
         $slug = preg_replace('/\s+/u', '-', trim($string));
-        $slug = str_replace("/","",$slug);
-        $slug = str_replace("?","",$slug);
-        return $slug;
+        $slug = str_replace("/", "", $slug);
+        $slug = str_replace("?", "", $slug);
+        return mb_strtolower($slug, 'UTF-8');
     }
 }
 
 
-if (! function_exists('make_input_name')) {
-    function make_input_name($string) {
+if (!function_exists('make_input_name')) {
+    function make_input_name($string)
+    {
         return preg_replace('/\s+/u', '_', trim($string));
     }
 }
 
+if (!function_exists('hasCategory')) {
+    function hasCategory($version)
+    {
+        if (strpos($version, "no_category") !== false) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
 
-if (! function_exists('serviceCategory')) {
-    function serviceCategory() {
-        $hbex = BasicExtra::first();
-        if($hbex->service_category == 1){
+if (!function_exists('isDark')) {
+    function isDark($version)
+    {
+        if (strpos($version, "dark") !== false) {
             return true;
         } else {
             return false;
@@ -71,123 +109,27 @@ if (! function_exists('serviceCategory')) {
     }
 }
 
-if (!function_exists('slug_create') ) {
-    function slug_create($val) {
+if (!function_exists('slug_create')) {
+    function slug_create($val)
+    {
         $slug = preg_replace('/\s+/u', '-', trim($val));
-        $slug = str_replace("/","",$slug);
-        $slug = str_replace("?","",$slug);
-        return $slug;
+        $slug = str_replace("/", "", $slug);
+        $slug = str_replace("?", "", $slug);
+        return mb_strtolower($slug, 'UTF-8');
     }
 }
-
-
-if (!function_exists('getHref') ) {
-    function getHref($link) {
-        $href = "#";
-
-        if ($link["type"] == 'home') {
-            $href = route('front.index');
-        } else if ($link["type"] == 'services' || $link["type"] == 'services-megamenu') {
-            $href = route('front.services');
-        } else if ($link["type"] == 'packages') {
-            $href = route('front.packages');
-        }
-        else if ($link["type"] == 'portfolios' || $link["type"] == 'portfolios-megamenu') {
-            $href = route('front.portfolios');
-        } else if ($link["type"] == 'team') {
-            $href = route('front.team');
-        } else if ($link["type"] == 'career') {
-            $href = route('front.career');
-        } else if ($link["type"] == 'courses' || $link["type"] == 'courses-megamenu') {
-            $href = route('courses');
-        } else if ($link["type"] == 'events' || $link["type"] == 'events-megamenu') {
-            $href = route('front.events');
-        } else if ($link["type"] == 'causes' || $link["type"] == 'causes-megamenu') {
-            $href = route('front.causes');
-        } else if ($link["type"] == 'knowledgebase') {
-            $href = route('front.knowledgebase');
-        } else if ($link["type"] == 'calendar') {
-            $href = route('front.calendar');
-        } else if ($link["type"] == 'gallery') {
-            $href = route('front.gallery');
-        } else if ($link["type"] == 'faq') {
-            $href = route('front.faq');
-        } else if ($link["type"] == 'products' || $link["type"] == 'products-megamenu') {
-            $href = route('front.product');
-        } else if ($link["type"] == 'cart') {
-            $href = route('front.cart');
-        } else if ($link["type"] == 'checkout') {
-            $href = route('front.checkout');
-        } else if ($link["type"] == 'blogs' || $link["type"] == 'blogs-megamenu') {
-            $href = route('front.blogs');
-        } else if ($link["type"] == 'rss') {
-            $href = route('front.rss');
-        } else if ($link["type"] == 'feedback') {
-            $href = route('feedback');
-        } else if ($link["type"] == 'contact') {
-            $href = route('front.contact');
-        } else if ($link["type"] == 'custom') {
-            if (empty($link["href"])) {
-                $href = "#";
-            } else {
-                $href = $link["href"];
-            }
-        } else {
-            $pageid = (int)$link["type"];
-            $page = Page::find($pageid);
-            if (!empty($page)) {
-                $href = route('front.dynamicPage', [$page->slug]);
-            } else {
-                $href = '#';
-            }
-        }
-
-        return $href;
-    }
-}
-
-
-
-if (!function_exists('create_menu') ) {
-    function create_menu($arr) {
-        echo '<ul style="z-index: 0;">';
-        foreach ($arr["children"] as $el) {
-
-            // determine if the class is 'submenus' or not
-            $class = null;
-            if (array_key_exists("children", $el)) {
-                $class = 'class="submenus"';
-            }
-
-
-            // determine the href
-            $href = getHref($el);
-
-
-            echo '<li '.$class.'>';
-            echo '<a  href="'.$href.'" target="'.$el["target"].'">'.$el["text"].'</a>';
-            if (array_key_exists("children", $el)) {
-                create_menu($el);
-            }
-            echo '</li>';
-        }
-        echo '</ul>';
-    }
-}
-
-
 
 if (!function_exists('hex2rgb') ) {
     function hex2rgb( $colour ) {
         if ( $colour[0] == '#' ) {
-            $colour = substr( $colour, 1 );
+                $colour = substr( $colour, 1 );
         }
         if ( strlen( $colour ) == 6 ) {
-            list( $r, $g, $b ) = array( $colour[0] . $colour[1], $colour[2] . $colour[3], $colour[4] . $colour[5] );
+                list( $r, $g, $b ) = array( $colour[0] . $colour[1], $colour[2] . $colour[3], $colour[4] . $colour[5] );
         } elseif ( strlen( $colour ) == 3 ) {
-            list( $r, $g, $b ) = array( $colour[0] . $colour[0], $colour[1] . $colour[1], $colour[2] . $colour[2] );
+                list( $r, $g, $b ) = array( $colour[0] . $colour[0], $colour[1] . $colour[1], $colour[2] . $colour[2] );
         } else {
-            return false;
+                return false;
         }
         $r = hexdec( $r );
         $g = hexdec( $g );
@@ -197,131 +139,216 @@ if (!function_exists('hex2rgb') ) {
 }
 
 
-if (!function_exists('onlyDigitalItemsInCart')) {
-    function onlyDigitalItemsInCart() {
-        $cart = session()->get('cart');
+if (!function_exists('getHref')) {
+    function getHref($link)
+    {
+        $href = "#";
 
-        if (!empty($cart)) {
-            foreach ($cart as $key => $cartItem) {
-                if ($cartItem['type'] != 'digital') {
-                    return false;
-                }
+        if ($link["type"] == 'home') {
+            $href = route('front.index');
+        } else if ($link["type"] == 'profiles') {
+            $href = route('front.user.view');
+        } else if ($link["type"] == 'pricing') {
+            $href = route('front.pricing');
+        } else if ($link["type"] == 'faq') {
+            $href = route('front.faq.view');
+        } else if ($link["type"] == 'blogs') {
+            $href = route('front.blogs');
+        } else if ($link["type"] == 'contact') {
+            $href = route('front.contact');
+        } else if ($link["type"] == 'custom') {
+            if (empty($link["href"])) {
+                $href = "#";
+            } else {
+                $href = $link["href"];
             }
+        } else {
+            $pageid = (int) $link["type"];
+            $page = Page::find($pageid);
+            if (!empty($page)) {
+                $href = route('front.dynamicPage', [$page->slug]);
+            } else {
+                $href = "#";
+            }
+        }
+
+        return $href;
+    }
+}
+
+
+
+if (!function_exists('create_menu')) {
+    function create_menu($arr)
+    {
+        echo '<ul class="sub-menu">';
+
+        foreach ($arr["children"] as $el) {
+
+            // determine if the class is 'submenus' or not
+            $class = 'class="nav-item"';
+            if (array_key_exists("children", $el)) {
+                $class = 'class="nav-item submenus"';
+            }
+            // determine the href
+            $href = getHref($el);
+
+            echo '<li ' . $class . '>';
+            echo '<a  href="' . $href . '" target="' . $el["target"] . '">' . $el["text"] . '</a>';
+            if (array_key_exists("children", $el)) {
+                create_menu($el);
+            }
+            echo '</li>';
+        }
+        echo '</ul>';
+
+    }
+}
+
+if (!function_exists('format_price')) {
+
+    function format_price($value): string
+    {
+        if (session()->has('lang')) {
+            $currentLang = Language::where('code', session()
+                ->get('lang'))
+                ->first();
+        } else {
+            $currentLang = Language::where('is_default', 1)
+                ->first();
+        }
+        $bex = $currentLang->basic_extended;
+        if($bex->base_currency_symbol_position == 'left'){
+           return $bex->base_currency_symbol.$value;
+        }else{
+            return  $value.$bex->base_currency_symbol;
+        }
+    }
+}
+
+if (!function_exists('getParam')) {
+
+    function getParam()
+    {
+        $parsedUrl = parse_url(url()->current());
+        $host =  $parsedUrl['host'];
+
+        // if it is path based URL, then return {username}
+        if (strpos($host, env('WEBSITE_HOST')) !== false && $host == env('WEBSITE_HOST')) {
+            $path = explode('/', $parsedUrl['path']);
+            return $path[1];
+        }
+        
+        // if it is a subdomain / custom domain , then return the host (username.domain.ext / custom_domain.ext)
+        return $host;
+        
+    }
+}
+
+
+// checks if 'current package has subdomain ?'
+
+if (!function_exists('cPackageHasSubdomain')) {
+    function cPackageHasSubdomain($user) {
+        $currPackageFeatures = UserPermissionHelper::packagePermission($user->id);
+        $currPackageFeatures = json_decode($currPackageFeatures, true);
+        
+        // if the current package does not contain subdomain
+        if (empty($currPackageFeatures) || !is_array($currPackageFeatures) || !in_array('Subdomain', $currPackageFeatures)) {
+            return false;
+        }
+        return true;
+    }
+}
+
+
+// checks if 'current package has custom domain ?'
+if (!function_exists('cPackageHasCdomain')) {
+    function cPackageHasCdomain($user) {
+        $currPackageFeatures = UserPermissionHelper::packagePermission($user->id);
+        $currPackageFeatures = json_decode($currPackageFeatures, true);
+
+        if (empty($currPackageFeatures) || !is_array($currPackageFeatures) || !in_array('Custom Domain', $currPackageFeatures)) {
+            return false;
         }
 
         return true;
     }
 }
 
+if (!function_exists('getCdomain')) {
 
-if (!function_exists('containsDigitalItemsInCart')) {
-    function containsDigitalItemsInCart() {
-        $cart = session()->get('cart');
+    function getCdomain($user)
+    {
+        $cdomains = $user->custom_domains()->where('status', 1);
+        return $cdomains->count() > 0 ? $cdomains->orderBy('id', 'DESC')->first()->requested_domain : false;
+    }
+}
 
-        if (!empty($cart)) {
-            foreach ($cart as $key => $cartItem) {
-                if ($cartItem['type'] == 'digital') {
-                    return true;
+
+if (!function_exists('getUser')) {
+
+    function getUser()
+    {
+        $parsedUrl = parse_url(url()->current());
+        
+        $host =  $parsedUrl['host'];
+        $hostArr = explode('.', $host);
+
+        // if the current URL contains the website domain
+        if (strpos($host, env('WEBSITE_HOST')) !== false) {
+            // if current URL is a path based URL
+            if ($host == env('WEBSITE_HOST')) {
+                $path = explode('/', $parsedUrl['path']);
+                $username = $path[1];
+            } 
+            // if the current URL is a subdomain
+            else {
+                $username = $hostArr[0];
+            }
+            
+            $user = User::where('username', $username)
+            ->where('online_status', 1)
+            ->whereHas('memberships', function($q){
+                $q->where('status','=',1)
+                ->where('start_date','<=', Carbon::now()->format('Y-m-d'))
+                ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
+            })
+            ->firstOrFail();
+
+            // if the current url is a subdomain
+            if ($host != env('WEBSITE_HOST')) {
+                if (!cPackageHasSubdomain($user)) {
+                    return view('errors.404');
                 }
             }
-        }
+        } else {
+            $user = User::where('online_status', 1)
+            ->whereHas('user_custom_domains', function($q) use ($host) {
+                $q->where('status','=',1)
+                ->where('requested_domain','=',$host);
+            })
+            ->whereHas('memberships', function($q){
+                $q->where('status','=',1)
+                ->where('start_date','<=', Carbon::now()->format('Y-m-d'))
+                ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
+            })->firstOrFail();
 
-        return false;
-    }
-}
-
-
-if (!function_exists('onlyDigitalItems')) {
-    function onlyDigitalItems($order) {
-        $oitems = $order->orderitems;
-
-        foreach ($oitems as $key => $oitem) {
-            if ($oitem->product->type != 'digital') {
-                return false;
+            if (!cPackageHasCdomain($user)) {
+                return view('errors.404');
             }
         }
 
-        return true;
+        return $user;
     }
 }
 
 
-if (!function_exists('containsDigitalItem')) {
-    function containsDigitalItem($order) {
-        $oitems = $order->orderitems;
 
-        foreach ($oitems as $key => $oitem) {
-            if ($oitem->product->type == 'digital') {
-                return true;
-            }
-        }
+if (!function_exists('detailsUrl')) {
 
-        return false;
-    }
-}
-
-if (!function_exists('cartLength')) {
-    function cartLength()
+    function detailsUrl($user)
     {
-        $length = 0;
-        if (session()->has('cart') && !empty(session()->get('cart'))) {
-            $cart = session()->get('cart');
-            foreach ($cart as $key => $cartItem) {
-                $length += (float)$cartItem['qty'];
-            }
-        }
-
-        return round($length, 2);
+        return '//' . env('WEBSITE_HOST') . '/' . $user->username;
     }
 }
-
-if (!function_exists('cartTotal')) {
-    function cartTotal()
-    {
-        $total = 0;
-        if (session()->has('cart') && !empty(session()->get('cart'))) {
-            $cart = session()->get('cart');
-            foreach ($cart as $key => $cartItem) {
-                $total += (float)$cartItem['price'] * (float)$cartItem['qty'];
-            }
-        }
-
-        return round($total, 2);
-    }
-}
-
-if (!function_exists('cartSubTotal')) {
-    function cartSubTotal()
-    {
-        $coupon = session()->has('coupon') && !empty(session()->get('coupon')) ? session()->get('coupon') : 0;
-        $cartTotal = cartTotal();
-        $subTotal = $cartTotal - $coupon;
-
-        return round($subTotal, 2);
-    }
-}
-
-
-if (!function_exists('tax')) {
-    function tax()
-    {
-        $bex = BasicExtra::first();
-        $tax = $bex->tax;
-
-        if (session()->has('cart') && !empty(session()->get('cart'))) {
-            $tax = (cartSubTotal() * $tax) / 100;
-        }
-
-        return round($tax, 2);
-    }
-}
-
-if (!function_exists('coupon')) {
-    function coupon()
-    {
-        return session()->has('coupon') && !empty(session()->get('coupon')) ? round(session()->get('coupon'), 2) : 0.00;
-    }
-}
-
-
-

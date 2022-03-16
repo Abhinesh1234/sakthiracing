@@ -13,7 +13,6 @@ class LoginController extends Controller
     }
 
     public function authenticate(Request $request){
-      // return $request->username . ' ' . $request->password;
       $this->validate($request, [
         'username'   => 'required',
         'password' => 'required'

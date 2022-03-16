@@ -9,7 +9,7 @@ use Auth;
 use Session;
 use Hash;
 use Validator;
-use App\Admin;
+use App\Models\Admin;
 
 class ProfileController extends Controller
 {
@@ -22,39 +22,9 @@ class ProfileController extends Controller
       return view('admin.profile.editprofile', ['admin' => $admin]);
     }
 
-    public function updatePropic(Request $request) {
-      $img = $request->file('file');
-      $allowedExts = array('jpg', 'png', 'jpeg');
-
-      $rules = [
-        'file' => [
-          function($attribute, $value, $fail) use ($img, $allowedExts) {
-            if (!empty($img)) {
-              $ext = $img->getClientOriginalExtension();
-              if(!in_array($ext, $allowedExts)) {
-                  return $fail("Only png, jpg, jpeg image is allowed");
-              }
-            }
-          },
-        ],
-      ];
-
-      $validator = Validator::make($request->all(), $rules);
-      if ($validator->fails()) {
-        $validator->getMessageBag()->add('error', 'true');
-        return response()->json(['errors' => $validator->errors(), 'id' => 'image']);
-      }
-
-      @unlink("assets/admin/img/propics/".Auth::guard('admin')->user()->image);
-      $fileName = uniqid() . '.jpg';
-      $request->file('file')->move('assets/admin/img/propics/', $fileName);
-      $admin = Admin::findOrFail(Auth::guard('admin')->user()->id);
-      $admin->image = $fileName;
-      $admin->save();
-      return response()->json(['status' => "success", 'image' => 'image']);
-    }
-
     public function updateProfile(Request $request) {
+      $img = $request->file('profile_image');
+      $allowedExts = array('jpg', 'png', 'jpeg');
       $admin = Admin::findOrFail(Auth::guard('admin')->user()->id);
 
       $validatedData = $request->validate([
@@ -66,6 +36,16 @@ class ProfileController extends Controller
         'email' => 'required|email|max:255',
         'first_name' => 'required|max:255',
         'last_name' => 'required|max:255',
+        'profile_image' => [
+            function ($attribute, $value, $fail) use ($request, $img, $allowedExts) {
+                if ($request->hasFile('profile_image')) {
+                    $ext = $img->getClientOriginalExtension();
+                    if (!in_array($ext, $allowedExts)) {
+                        return $fail("Only png, jpg, jpeg image is allowed");
+                    }
+                }
+            },
+        ],
       ]);
 
 
@@ -73,6 +53,14 @@ class ProfileController extends Controller
       $admin->email = $request->email;
       $admin->first_name = $request->first_name;
       $admin->last_name = $request->last_name;
+
+      if ($request->hasFile('profile_image')) {
+          @unlink('assets/admin/img/propics/' . $admin->image);
+          $filename = uniqid() . '.' . $img->getClientOriginalExtension();
+          $img->move('assets/admin/img/propics/', $filename);
+          $admin->image = $filename;
+      }
+
       $admin->save();
 
       Session::flash('success', 'Profile updated successfully!');

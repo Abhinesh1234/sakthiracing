@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @php
-$selLang = \App\Language::where('code', request()->input('language'))->first();
+$selLang = \App\Models\Language::where('code', request()->input('language'))->first();
 @endphp
 @if(!empty($selLang) && $selLang->rtl == 1)
 @section('styles')
@@ -67,52 +67,50 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
           <div class="row">
             <div class="col-lg-6 offset-lg-3">
 
-
-              <form id="ajaxForm" action="{{route('admin.footer.update', $lang_id)}}" method="post">
+              <form id="ajaxForm" action="{{route('admin.footer.update', $lang_id)}}" method="post" enctype="multipart/form-data">
                 @csrf
-                {{-- Footer Logo Part --}}
-                <div class="form-group">
-                    <label for="">Footer Logo ** </label>
-                    <br>
-                    <div class="thumb-preview" id="thumbPreview1">
-                        <img src="{{asset('assets/front/img/'.$abs->footer_logo)}}" alt="Footer Logo">
+                <div class="row">
+                  <div class="col-lg-12">
+                    <div class="form-group">
+                      <div class="mb-2">
+                        <label for="image"><strong>Logo</strong></label>
+                      </div>
+                      <div class="showImage mb-3">
+                        <img src="{{ !empty($abs->footer_logo) ? asset('assets/front/img/' . $abs->footer_logo) :  asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                      </div>
+                      <input type="file" name="file" id="image" class="form-control image">
+                      <p id="errimage" class="mb-0 text-danger em"></p>
                     </div>
-                    <br>
-                    <br>
-
-
-                    <input id="fileInput1" type="hidden" name="footer_logo">
-                    <button id="chooseImage1" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal1">Choose Image</button>
-
-
-                    <p class="text-warning mb-0">JPG, PNG, JPEG, SVG images are allowed</p>
-                    <p id="errfooter_logo" class="em text-danger mb-0"></p>
-
-                    <!-- Background LFM Modal -->
-                    <div class="modal fade lfm-modal" id="lfmModal1" tabindex="-1" role="dialog" aria-labelledby="lfmModalTitle" aria-hidden="true">
-                        <i class="fas fa-times-circle"></i>
-                        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                            <div class="modal-content">
-                                <div class="modal-body p-0">
-                                    <iframe src="{{url('laravel-filemanager')}}?serial=1" style="width: 100%; height: 500px; overflow: hidden; border: none;"></iframe>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                  </div>
                 </div>
+                
                 <div class="form-group">
-                  <label for="">Footer Text **</label>
+                  <label for="">Footer Text</label>
                   <input type="text" class="form-control" name="footer_text" value="{{$abs->footer_text}}">
                   <p id="errfooter_text" class="em text-danger mb-0"></p>
                 </div>
+                
                 <div class="form-group">
-                  <label for="">Newsletter Text **</label>
-                  <input type="text" class="form-control" name="newsletter_text" value="{{$abs->newsletter_text}}">
-                  <p id="errnewsletter_text" class="em text-danger mb-0"></p>
+                  <label for="">Useful Links Title</label>
+                  <input type="text" class="form-control" name="useful_links_title" value="{{$abs->useful_links_title}}">
+                  <p id="erruseful_links_title" class="em text-danger mb-0"></p>
                 </div>
+                
                 <div class="form-group">
-                  <label for="">Copyright Text **</label>
-                  <textarea id="copyright_text" name="copyright_text" class="summernote form-control" data-height="150">{{convertHtml($abs->copyright_text)}}</textarea>
+                  <label for="">Newsletter Title</label>
+                  <input type="text" class="form-control" name="newsletter_title" value="{{$abs->newsletter_title}}">
+                  <p id="errnewsletter_title" class="em text-danger mb-0"></p>
+                </div>
+                
+                <div class="form-group">
+                  <label for="">Newsletter Subtitle</label>
+                  <input type="text" class="form-control" name="newsletter_subtitle" value="{{$abs->newsletter_subtitle}}">
+                  <p id="errnewsletter_subtitle" class="em text-danger mb-0"></p>
+                </div>
+
+                <div class="form-group">
+                  <label for="">Copyright Text</label>
+                  <textarea id="copyright_text" name="copyright_text" class="summernote form-control" data-height="100">{{replaceBaseUrl($abs->copyright_text)}}</textarea>
                   <p id="errcopyright_text" class="em text-danger mb-0"></p>
                 </div>
               </form>
@@ -134,4 +132,36 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
     </div>
   </div>
 
+@endsection
+
+
+@section('scripts')
+<script>
+$(function ($) {
+  "use strict";
+
+    $(".remove-image").on('click', function(e) {
+        e.preventDefault();
+        $(".request-loader").addClass("show");
+
+        let type = $(this).data('type');
+        let fd = new FormData();
+        fd.append('type', type);
+        fd.append('language_id', {{$abs->language->id}});
+
+        $.ajax({
+            url: "{{route('admin.footer.rmvimg')}}",
+            data: fd,
+            type: 'POST',
+            contentType: false,
+            processData: false,
+            success: function(data) {
+                if (data == "success") {
+                    window.location = "{{url()->current() . '?language=' . $abs->language->code}}";
+                }
+            }
+        })
+    });
+});
+</script>
 @endsection

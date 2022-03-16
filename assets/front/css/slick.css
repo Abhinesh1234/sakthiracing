@@ -109,11 +109,25 @@
 .slick-vertical .slick-slide
 {
     display: block;
-
     height: auto;
-
-    border: 1px solid transparent;
 }
 .slick-arrow.slick-hidden {
     display: none;
+}
+.slick-dots{
+    display: block;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    line-height: 0;
+}
+.slick-dots li{
+    position: relative;
+    cursor: pointer;
+    display: inline-block;
+}
+.slick-dots li button{
+    font-size: 0px;
+    border: none;
 }

@@ -1,5 +1,9 @@
 @extends('admin.layout')
 
+@php
+$default = App\Models\Language::where('is_default', 1)->firstOrFail();
+@endphp
+
 @section('content')
 <div class="page-header">
     <h4 class="page-title">Announcement Popup</h4>
@@ -31,8 +35,11 @@
         <div class="card">
             <div class="card-header">
                 <div class="row">
-                    <div class="col-lg-10">
+                    <div class="col-lg-9">
                         <div class="card-title">Add Popup (Type - {{$type}})</div>
+                    </div>
+                    <div class="col-lg-3">
+                        <a class="btn btn-primary float-right btn-sm" href="{{route('admin.popup.index', ['language' => $default->code])}}">All Popups</a>
                     </div>
                 </div>
             </div>
@@ -40,55 +47,41 @@
                 <div class="row">
                     <div class="col-lg-6 offset-lg-3">
 
-                        <form id="ajaxForm" class="modal-form" action="{{route('admin.popup.store')}}" method="post">
+                        <form id="ajaxForm" class="modal-form" action="{{route('admin.popup.store')}}" method="post" enctype="multipart/form-data">
                             @csrf
 
                             <input type="hidden" name="type" value="{{$type}}">
 
                             @if ($type == 1 || $type == 4 || $type == 5 || $type == 7)
-
-                                {{-- Image Part --}}
-                                <div class="form-group">
-                                    <label for="">Image ** </label>
-                                    <br>
-                                    <div class="thumb-preview" id="thumbPreview1">
-                                        <img src="{{asset('assets/admin/img/noimage.jpg')}}" alt="Image">
-                                    </div>
-                                    <br>
-                                    <br>
-
-
-                                    <input id="fileInput1" type="hidden" name="image">
-                                    <button id="chooseImage1" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal1">Choose Image</button>
-
-
-                                    <p class="text-warning mb-0">JPG, PNG, JPEG, SVG images are allowed</p>
-                                    <p class="em text-danger mb-0" id="errimage"></p>
-
+                            {{-- Image --}}
+                            <div class="form-group">
+                                <div class="col-12 mb-2">
+                                    <label for="image"><strong>Image</strong></label>
                                 </div>
+                                <div class="col-md-12 showImage mb-3">
+                                    <img src="{{asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                                </div>
+                                <input type="file" name="image" class="form-control image">
+                                <p class="mb-0 text-warning">Only png, jpg, jpeg image is allowed</p>
+                                <p id="errimage" class="mb-0 text-danger em"></p>
+                            </div>
                             @endif
 
                             @if ($type == 2 || $type == 3 || $type == 6)
-                            {{-- Background Image Part --}}
+                            {{-- Background Image --}}
                             <div class="form-group">
-                                <label for="">Background Image ** </label>
-                                <br>
-                                <div class="thumb-preview" id="thumbPreview2">
-                                    <img src="{{asset('assets/admin/img/noimage.jpg')}}" alt="Background Image">
+                                <div class="col-12 mb-2">
+                                    <label for="image"><strong>Background Image</strong></label>
                                 </div>
-                                <br>
-                                <br>
-
-
-                                <input id="fileInput2" type="hidden" name="background_image">
-                                <button id="chooseImage2" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal2">Choose Image</button>
-
-
-                                <p class="text-warning mb-0">JPG, PNG, JPEG, SVG images are allowed</p>
-                                <p class="em text-danger mb-0" id="errbackground_image"></p>
-
+                                <div class="col-md-12 showImage mb-3">
+                                    <img src="{{asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                                </div>
+                                <input type="file" name="background_image" class="form-control image">
+                                <p class="mb-0 text-warning">Only png, jpg, jpeg image is allowed</p>
+                                <p id="errbackground_image" class="mb-0 text-danger em"></p>
                             </div>
                             @endif
+
 
                             <div class="row">
                                 <div class="col-lg-6">
@@ -248,65 +241,4 @@
     </div>
 </div>
 
-<!-- Image LFM Modal -->
-<div class="modal fade lfm-modal" id="lfmModal1" tabindex="-1" role="dialog" aria-labelledby="lfmModalTitle" aria-hidden="true">
-    <i class="fas fa-times-circle"></i>
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-body p-0">
-                <iframe src="{{url('laravel-filemanager')}}?serial=1" style="width: 100%; height: 500px; overflow: hidden; border: none;"></iframe>
-            </div>
-        </div>
-    </div>
-</div><!-- Image LFM Modal -->
-<div class="modal fade lfm-modal" id="lfmModal2" tabindex="-1" role="dialog" aria-labelledby="lfmModalTitle" aria-hidden="true">
-    <i class="fas fa-times-circle"></i>
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-body p-0">
-                <iframe src="{{url('laravel-filemanager')}}?serial=2" style="width: 100%; height: 500px; overflow: hidden; border: none;"></iframe>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
-
-@section('scripts')
-<script>
-    $(document).ready(function() {
-        // make input fields RTL
-        $("select[name='language_id']").on('change', function() {
-            $(".request-loader").addClass("show");
-            let url = "{{url('/')}}/admin/rtlcheck/" + $(this).val();
-            console.log(url);
-            $.get(url, function(data) {
-                $(".request-loader").removeClass("show");
-                if (data == 1) {
-                    $("form.modal-form input").each(function() {
-                        if (!$(this).hasClass('ltr')) {
-                            $(this).addClass('rtl');
-                        }
-                    });
-                    $("form.modal-form select").each(function() {
-                        if (!$(this).hasClass('ltr')) {
-                            $(this).addClass('rtl');
-                        }
-                    });
-                    $("form.modal-form textarea").each(function() {
-                        if (!$(this).hasClass('ltr')) {
-                            $(this).addClass('rtl');
-                        }
-                    });
-                    $("form.modal-form .summernote").each(function() {
-                        $(this).siblings('.note-editor').find('.note-editable').addClass('rtl text-right');
-                    });
-
-                } else {
-                    $("form.modal-form input, form.modal-form select, form.modal-form textarea").removeClass('rtl');
-                    $("form.modal-form .summernote").siblings('.note-editor').find('.note-editable').removeClass('rtl text-right');
-                }
-            })
-        });
-    });
-</script>
 @endsection

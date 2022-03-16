@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Spatie\Sitemap\SitemapGenerator;
-use App\Language;
-use App\Sitemap;
+use App\Models\Language;
+use App\Models\Sitemap;
 use Illuminate\Support\Facades\Session;
 
 class SitemapController extends Controller
@@ -22,7 +22,7 @@ class SitemapController extends Controller
         $input = $request->all();
 
         $filename = 'sitemap'.uniqid().'.xml';
-        SitemapGenerator::create($request->sitemap_url)->writeToFile('assets/sitemaps/'.$filename);
+        SitemapGenerator::create($request->sitemap_url)->writeToFile('assets/front/files/'.$filename);
         $input['filename']    = $filename;
         $input['sitemap_url'] = $request->sitemap_url;
         $data->fill($input)->save();
@@ -32,17 +32,17 @@ class SitemapController extends Controller
     }
 
     public function download(Request $request) {
-        return response()->download('assets/sitemaps/'.$request->filename);
+        return response()->download('assets/front/files/'.$request->filename);
     }
 
     public function update(Request $request)
     {
         $data  = Sitemap::find($request->id);
         $input = $request->all();
-        @unlink('assets/sitemaps/'.$data->filename);
+        @unlink('assets/front/files/'.$data->filename);
 
         $filename = 'sitemap'.uniqid().'.xml';
-        SitemapGenerator::create($data->sitemap_url)->writeToFile('assets/sitemaps/'.$filename);
+        SitemapGenerator::create($data->sitemap_url)->writeToFile('assets/front/files/'.$filename);
         $input['filename']  = $filename;
 
         $data->update($input);
@@ -52,7 +52,7 @@ class SitemapController extends Controller
 
     public function delete($id) {
     $sitemap = Sitemap::find($id);
-    @unlink('assets/sitemaps/'.$sitemap->filename);
+    @unlink('assets/front/files/'.$sitemap->filename);
     $sitemap->delete();
 
     Session::flash('success', 'Sitemap file deleted successfully!');

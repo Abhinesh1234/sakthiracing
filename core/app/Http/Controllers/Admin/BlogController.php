@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Admin;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Str;
-use App\Bcategory;
-use App\Language;
-use App\Blog;
-use App\Megamenu;
+use App\Models\Bcategory;
+use App\Models\Language;
+use App\Models\Blog;
+use Purifier;
 use Validator;
 use Session;
 
@@ -33,11 +33,11 @@ class BlogController extends Controller
         return view('admin.blog.blog.edit', $data);
     }
 
+
     public function store(Request $request)
     {
-        $image = $request->image;
-        $allowedExts = array('jpg', 'png', 'jpeg', 'svg');
-        $extImage = pathinfo($image, PATHINFO_EXTENSION);
+        $img = $request->file('image');
+        $allowedExts = array('jpg', 'png', 'jpeg');
 
         $messages = [
             'language_id.required' => 'The language field is required'
@@ -47,32 +47,21 @@ class BlogController extends Controller
 
         $rules = [
             'language_id' => 'required',
-            'image' => 'required',
-            'title' => [
-                'required',
-                'max:255',
-                function ($attribute, $value, $fail) use ($slug) {
-                    $blogs = Blog::all();
-                    foreach ($blogs as $key => $blog) {
-                        if (strtolower($slug) == strtolower($blog->slug)) {
-                            $fail('The title field must be unique.');
-                        }
-                    }
-                }
-            ],
+            'title' => 'required|max:255',
             'category' => 'required',
             'content' => 'required',
             'serial_number' => 'required|integer',
-        ];
-        if ($request->filled('image')) {
-            $rules['image'] = [
-                function ($attribute, $value, $fail) use ($extImage, $allowedExts) {
-                    if (!in_array($extImage, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, svg image is allowed");
-                    }
-                }
+            'image' => [
+                    function ($attribute, $value, $fail) use ($img, $allowedExts) {
+                        if (!empty($img)) {
+                            $ext = $img->getClientOriginalExtension();
+                            if (!in_array($ext, $allowedExts)) {
+                                return $fail("Only png, jpg, jpeg image is allowed");
+                            }
+                        }
+                    },
+                ],
             ];
-        }
 
         $validator = Validator::make($request->all(), $rules, $messages);
         if ($validator->fails()) {
@@ -80,23 +69,23 @@ class BlogController extends Controller
             return response()->json($validator->errors());
         }
 
-        $blog = new Blog;
-        $blog->language_id = $request->language_id;
-        $blog->title = $request->title;
-        $blog->slug = $slug;
-        $blog->bcategory_id = $request->category;
-        $blog->content = str_replace(url('/') . '/assets/front/img/', "{base_url}/assets/front/img/", $request->content);
-        $blog->meta_keywords = $request->meta_keywords;
-        $blog->meta_description = $request->meta_description;
-        $blog->serial_number = $request->serial_number;
 
-        if ($request->filled('image')) {
-            $filename = uniqid() .'.'. $extImage;
-            @copy(str_replace(' ', '%20', $image), 'assets/front/img/blogs/' . $filename);
-            $blog->main_image = $filename;
+        $input = $request->all();
+
+        $input['bcategory_id'] = $request->category;
+        $input['slug'] = $slug;
+
+        if($request->hasFile('image')){
+            $filename = time() . '.' . $img->getClientOriginalExtension();
+            $request->session()->put('blog_image', $filename);
+            $request->file('image')->move('assets/front/img/blogs/', $filename);
+            $input['main_image'] = $filename;
         }
+        $input['content'] = Purifier::clean($request->content);
 
-        $blog->save();
+        $blog = new Blog;
+
+        $blog->create($input);
 
         Session::flash('success', 'Blog added successfully!');
         return "success";
@@ -104,90 +93,55 @@ class BlogController extends Controller
 
     public function update(Request $request)
     {
+
+        $img = $request->file('image');
+        $allowedExts = array('jpg', 'png', 'jpeg');
+
         $slug = make_slug($request->title);
         $blog = Blog::findOrFail($request->blog_id);
-        $blogId = $request->blog_id;
-
-        $image = $request->image;
-        $allowedExts = array('jpg', 'png', 'jpeg', 'svg');
-        $extImage = pathinfo($image, PATHINFO_EXTENSION);
 
         $rules = [
-            'title' => [
-                'required',
-                'max:255',
-                function ($attribute, $value, $fail) use ($slug, $blogId) {
-                    $blogs = Blog::all();
-                    foreach ($blogs as $key => $blog) {
-                        if ($blog->id != $blogId && strtolower($slug) == strtolower($blog->slug)) {
-                            $fail('The title field must be unique.');
-                        }
-                    }
-                }
-            ],
+            'title' => 'required|max:255',
             'category' => 'required',
             'content' => 'required',
             'serial_number' => 'required|integer',
-        ];
 
-        if ($request->filled('image')) {
-            $rules['image'] = [
-                function ($attribute, $value, $fail) use ($extImage, $allowedExts) {
-                    if (!in_array($extImage, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, svg image is allowed");
+            'image' => [
+                function ($attribute, $value, $fail) use ($img, $allowedExts) {
+                    if (!empty($img)) {
+                        $ext = $img->getClientOriginalExtension();
+                        if (!in_array($ext, $allowedExts)) {
+                            return $fail("Only png, jpg, jpeg image is allowed");
+                        }
                     }
-                }
-            ];
-        }
+                },
+            ],
+        ];
 
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             $errmsgs = $validator->getMessageBag()->add('error', 'true');
             return response()->json($validator->errors());
         }
-
+        $input = $request->all();
         $blog = Blog::findOrFail($request->blog_id);
-        $blog->title = $request->title;
-        $blog->slug = $slug;
-        $blog->bcategory_id = $request->category;
-        $blog->content = str_replace(url('/') . '/assets/front/img/', "{base_url}/assets/front/img/", $request->content);
-        $blog->meta_keywords = $request->meta_keywords;
-        $blog->meta_description = $request->meta_description;
-        $blog->serial_number = $request->serial_number;
 
-        if ($request->filled('image')) {
+        $input['bcategory'] = $request->category;
+        $input['slug'] = $slug;
+
+        if ($request->hasFile('image')) {
+            $filename = time() . '.' . $img->getClientOriginalExtension();
+            $request->file('image')->move('assets/front/img/blogs/', $filename);
             @unlink('assets/front/img/blogs/' . $blog->main_image);
-            $filename = uniqid() .'.'. $extImage;
-            @copy(str_replace(' ', '%20', $image), 'assets/front/img/blogs/' . $filename);
-            $blog->main_image = $filename;
+            $input['main_image'] = $filename;
         }
+        $input['content'] = Purifier::clean($request->content);
 
-        $blog->save();
+
+        $blog->update($input);
 
         Session::flash('success', 'Blog updated successfully!');
         return "success";
-    }
-
-    public function deleteFromMegaMenu($blog) {
-        // unset service from megamenu for service_category = 1
-        $megamenu = Megamenu::where('language_id', $blog->language_id)->where('category', 1)->where('type', 'blogs');
-        if ($megamenu->count() > 0) {
-            $megamenu = $megamenu->first();
-            $menus = json_decode($megamenu->menus, true);
-            $catId = $blog->bcategory->id;
-            if (is_array($menus) && array_key_exists("$catId", $menus)) {
-                if (in_array($blog->id, $menus["$catId"])) {
-                    $index = array_search($blog->id, $menus["$catId"]);
-                    unset($menus["$catId"]["$index"]);
-                    $menus["$catId"] = array_values($menus["$catId"]);
-                    if (count($menus["$catId"]) == 0) {
-                        unset($menus["$catId"]);
-                    }
-                    $megamenu->menus = json_encode($menus);
-                    $megamenu->save();
-                }
-            }
-        }
     }
 
     public function delete(Request $request)
@@ -195,9 +149,6 @@ class BlogController extends Controller
 
         $blog = Blog::findOrFail($request->blog_id);
         @unlink('assets/front/img/blogs/' . $blog->main_image);
-
-        $this->deleteFromMegaMenu($blog);
-
         $blog->delete();
 
         Session::flash('success', 'Blog deleted successfully!');
@@ -211,9 +162,6 @@ class BlogController extends Controller
         foreach ($ids as $id) {
             $blog = Blog::findOrFail($id);
             @unlink('assets/front/img/blogs/' . $blog->main_image);
-
-            $this->deleteFromMegaMenu($blog);
-
             $blog->delete();
         }
 
@@ -223,23 +171,8 @@ class BlogController extends Controller
 
     public function getcats($langid)
     {
-        $bcategories = Bcategory::where('language_id', $langid)->get();
+        $bcategories = Bcategory::where('language_id', $langid)->where('status', 1)->get();
 
         return $bcategories;
-    }
-
-    public function sidebar(Request $request)
-    {
-        $blog = Blog::find($request->blog_id);
-        $blog->sidebar = $request->sidebar;
-        $blog->save();
-
-        if ($request->sidebar == 1) {
-            Session::flash('success', 'Enabled successfully!');
-        } else {
-            Session::flash('success', 'Disabled successfully!');
-        }
-
-        return back();
     }
 }

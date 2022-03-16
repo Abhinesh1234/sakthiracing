@@ -19,7 +19,8 @@
 
 
     <blockquote>
-        <p><strong>Admin Credentials</strong></p>
+        <p><strong>Admin Panel Information</strong></p>
+        <strong>URL: </strong>{your_website_url}/admin <br>
         <strong>Username: </strong>admin <br>
         <strong>Password: </strong>admin
     </blockquote>

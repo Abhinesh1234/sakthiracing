@@ -49,7 +49,6 @@
                 </div>
                 @php
                     $paypalInfo = json_decode($paypal->information, true);
-                    // dd($paypalInfo);
                 @endphp
                 <div class="form-group">
                   <label>Paypal Test Mode</label>
@@ -179,7 +178,6 @@
                 @csrf
                 @php
                     $paytmInfo = json_decode($paytm->information, true);
-                    // dd($paytmInfo);
                 @endphp
                 <div class="form-group">
                     <label>Paytm</label>
@@ -193,6 +191,34 @@
                         <span class="selectgroup-button">Deactive</span>
                       </label>
                     </div>
+                </div>
+                <div class="form-group">  
+                  <label>Paytm Environment</label>
+                  <div class="selectgroup w-100">
+                    <label class="selectgroup-item">
+                      <input
+                        type="radio"
+                        name="environment"
+                        value="local"
+                        class="selectgroup-input"
+                        {{ $paytmInfo['environment'] == 'local' ? 'checked' : '' }}
+                      >
+                      <span class="selectgroup-button">{{ __('Local') }}</span>
+                    </label>
+                    <label class="selectgroup-item">
+                      <input
+                        type="radio"
+                        name="environment"
+                        value="production"
+                        class="selectgroup-input"
+                        {{ $paytmInfo['environment'] == 'production' ? 'checked' : '' }}
+                      >
+                      <span class="selectgroup-button">{{ __('Production') }}</span>
+                    </label>
+                  </div>
+                  @if ($errors->has('environment'))
+                    <p class="mb-0 text-danger">{{ $errors->first('environment') }}</p>
+                  @endif
                 </div>
                 <div class="form-group">
                     <label>Paytm Merchant Key</label>
@@ -259,7 +285,6 @@
                 @csrf
                 @php
                     $instamojoInfo = json_decode($instamojo->information, true);
-                    // dd($instamojoInfo);
                 @endphp
                 <div class="form-group">
                     <label>Instamojo</label>
@@ -337,7 +362,6 @@
                 @csrf
                 @php
                     $paystackInfo = json_decode($paystack->information, true);
-                    // dd($paystackInfo);
                 @endphp
                 <div class="form-group">
                     <label>Paystack</label>
@@ -353,17 +377,10 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Paystack Public Key</label>
+                    <label>Paystack Secret Key</label>
                     <input class="form-control" name="key" value="{{$paystackInfo['key']}}">
                     @if ($errors->has('key'))
                         <p class="mb-0 text-danger">{{$errors->first('key')}}</p>
-                    @endif
-                </div>
-                <div class="form-group">
-                    <label>Paystack Business Email</label>
-                    <input class="form-control" name="email" value="{{$paystackInfo['email']}}">
-                    @if ($errors->has('email'))
-                        <p class="mb-0 text-danger">{{$errors->first('email')}}</p>
                     @endif
                 </div>
 
@@ -401,7 +418,6 @@
                 @csrf
                 @php
                     $flutterwaveInfo = json_decode($flutterwave->information, true);
-                    // dd($flutterwaveInfo);
                 @endphp
                 <div class="form-group">
                     <label>Flutterwave</label>
@@ -466,7 +482,6 @@
                     @csrf
                     @php
                         $mollieInfo = json_decode($mollie->information, true);
-                        // dd($mollieInfo);
                     @endphp
                     <div class="form-group">
                         <label>Mollie Payment</label>
@@ -526,7 +541,6 @@
                     @csrf
                     @php
                         $razorpayInfo = json_decode($razorpay->information, true);
-                        // dd($razorpayInfo);
                     @endphp
                     <div class="form-group">
                         <label>Razorpay</label>
@@ -577,12 +591,12 @@
 
     <div class="col-lg-4">
         <div class="card">
-            <form class="" action="{{route('admin.payumoney.update')}}" method="post">
+            <form class="" action="{{route('admin.anet.update')}}" method="post">
             @csrf
             <div class="card-header">
                 <div class="row">
                     <div class="col-lg-12">
-                        <div class="card-title">PayUmoney</div>
+                        <div class="card-title">Authorize.Net</div>
                     </div>
                 </div>
             </div>
@@ -590,56 +604,64 @@
 
             <div class="card-body pt-5 pb-5">
                 <div class="row">
-                    <div class="col-lg-12">
-                        @csrf
-                        @php
-                            $payumoneyInfo = json_decode($payumoney->information, true);
-                        @endphp
-                        <div class="form-group">
-                            <label>PayUmoney</label>
-                            <div class="selectgroup w-100">
-                            <label class="selectgroup-item">
-                                <input type="radio" name="status" value="1" class="selectgroup-input" {{$payumoney->status == 1 ? 'checked' : ''}}>
-                                <span class="selectgroup-button">Active</span>
-                            </label>
-                            <label class="selectgroup-item">
-                                <input type="radio" name="status" value="0" class="selectgroup-input" {{$payumoney->status == 0 ? 'checked' : ''}}>
-                                <span class="selectgroup-button">Deactive</span>
-                            </label>
-                            </div>
+                <div class="col-lg-12">
+                    @csrf
+                    @php
+                        $anetInfo = json_decode($anet->information, true);
+                    @endphp
+                    <div class="form-group">
+                        <label>Authorize.Net</label>
+                        <div class="selectgroup w-100">
+                        <label class="selectgroup-item">
+                            <input type="radio" name="status" value="1" class="selectgroup-input" {{$anet->status == 1 ? 'checked' : ''}}>
+                            <span class="selectgroup-button">Active</span>
+                        </label>
+                        <label class="selectgroup-item">
+                            <input type="radio" name="status" value="0" class="selectgroup-input" {{$anet->status == 0 ? 'checked' : ''}}>
+                            <span class="selectgroup-button">Deactive</span>
+                        </label>
                         </div>
-
-                        <div class="form-group">
-                            <label>Test Mode</label>
-                            <div class="selectgroup w-100">
-                              <label class="selectgroup-item">
-                                <input type="radio" name="sandbox_check" value="1" class="selectgroup-input" {{array_key_exists('sandbox_check', $payumoneyInfo) && $payumoneyInfo['sandbox_check'] == 1 ? 'checked' : ''}}>
-                                <span class="selectgroup-button">Active</span>
-                              </label>
-                              <label class="selectgroup-item">
-                                <input type="radio" name="sandbox_check" value="0" class="selectgroup-input" {{array_key_exists('sandbox_check', $payumoneyInfo) && $payumoneyInfo['sandbox_check'] == 0 ? 'checked' : ''}}>
-                                <span class="selectgroup-button">Deactive</span>
-                              </label>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>PayUmoney Merchant Key</label>
-                            <input class="form-control" name="key" value="{{$payumoneyInfo['key']}}">
-                            @if ($errors->has('key'))
-                                <p class="mb-0 text-danger">{{$errors->first('key')}}</p>
-                            @endif
-                        </div>
-
-                        <div class="form-group">
-                            <label>PayUmoney Salt</label>
-                            <input class="form-control" name="salt" value="{{$payumoneyInfo['salt']}}">
-                            @if ($errors->has('salt'))
-                                <p class="mb-0 text-danger">{{$errors->first('salt')}}</p>
-                            @endif
-                        </div>
-
                     </div>
+
+                    <div class="form-group">
+                        <label>Authorize.Net Test Mode</label>
+                        <div class="selectgroup w-100">
+                        <label class="selectgroup-item">
+                            <input type="radio" name="sandbox_check" value="1" class="selectgroup-input" {{$anetInfo['sandbox_check'] == 1 ? 'checked' : ''}}>
+                            <span class="selectgroup-button">Active</span>
+                        </label>
+                        <label class="selectgroup-item">
+                            <input type="radio" name="sandbox_check" value="0" class="selectgroup-input" {{$anetInfo['sandbox_check'] == 0 ? 'checked' : ''}}>
+                            <span class="selectgroup-button">Deactive</span>
+                        </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>API Login ID</label>
+                        <input class="form-control" name="login_id" value="{{$anetInfo['login_id']}}">
+                        @if ($errors->has('login_id'))
+                            <p class="mb-0 text-danger">{{$errors->first('login_id')}}</p>
+                        @endif
+                    </div>
+
+                    <div class="form-group">
+                        <label>Transaction Key</label>
+                        <input class="form-control" name="transaction_key" value="{{$anetInfo['transaction_key']}}">
+                        @if ($errors->has('transaction_key'))
+                            <p class="mb-0 text-danger">{{$errors->first('transaction_key')}}</p>
+                        @endif
+                    </div>
+
+                    <div class="form-group">
+                        <label>Public Client Key</label>
+                        <input class="form-control" name="public_key" value="{{$anetInfo['public_key']}}">
+                        @if ($errors->has('public_key'))
+                            <p class="mb-0 text-danger">{{$errors->first('public_key')}}</p>
+                        @endif
+                    </div>
+
+                </div>
                 </div>
             </div>
 
@@ -674,7 +696,6 @@
                     @csrf
                     @php
                         $mercadopagoInfo = json_decode($mercadopago->information, true);
-                        // dd($mercadopagoInfo);
                     @endphp
                     <div class="form-group">
                         <label>Mercado Pago</label>

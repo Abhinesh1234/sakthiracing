@@ -43,7 +43,7 @@
                 <div class="row">
                     <div class="col-lg-6 offset-lg-3">
 
-                        <form id="ajaxForm" class="modal-form" action="{{route('admin.popup.update')}}" method="post">
+                        <form id="ajaxForm" class="modal-form" action="{{route('admin.popup.update')}}" method="post" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="popup_id" value="{{$popup->id}}">
                             <input type="hidden" name="type" value="{{$type}}">
@@ -52,44 +52,30 @@
 
                                 {{-- Image Part --}}
                                 <div class="form-group">
-                                    <label for="">Image ** </label>
-                                    <br>
-                                    <div class="thumb-preview" id="thumbPreview1">
-                                        <img src="{{asset('assets/front/img/popups/' . $popup->image)}}" alt="Image">
+                                    <div class="col-12 mb-2">
+                                      <label for="image"><strong>Image</strong></label>
                                     </div>
-                                    <br>
-                                    <br>
-
-
-                                    <input id="fileInput1" type="hidden" name="image">
-                                    <button id="chooseImage1" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal1">Choose Image</button>
-
-
-                                    <p class="text-warning mb-0">JPG, PNG, JPEG, SVG images are allowed</p>
-                                    <p class="em text-danger mb-0" id="errimage"></p>
-
+                                    <div class="col-md-12 showImage mb-3">
+                                      <img src="{{$popup->image ? asset('assets/front/img/popups/'.$popup->image) :asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                                    </div>
+                                    <input type="file" name="image" id="image" class="form-control image">
+                                    <p class="mb-0 text-warning">Only JPG, JPEG, PNG image is allowed</p>
+                                    <p id="errimage" class="mb-0 text-danger em"></p>
                                 </div>
                             @endif
 
                             @if ($type == 2 || $type == 3 || $type == 6)
                             {{-- Background Image Part --}}
                             <div class="form-group">
-                                <label for="">Background Image ** </label>
-                                <br>
-                                <div class="thumb-preview" id="thumbPreview2">
-                                    <img src="{{asset('assets/front/img/popups/' . $popup->background_image)}}" alt="Background Image">
+                                <div class="col-12 mb-2">
+                                  <label for="image"><strong>Background Image</strong></label>
                                 </div>
-                                <br>
-                                <br>
-
-
-                                <input id="fileInput2" type="hidden" name="background_image">
-                                <button id="chooseImage2" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal2">Choose Image</button>
-
-
-                                <p class="text-warning mb-0">JPG, PNG, JPEG, SVG images are allowed</p>
-                                <p class="em text-danger mb-0" id="errbackground_image"></p>
-
+                                <div class="col-md-12 showImage mb-3">
+                                  <img src="{{$popup->background_image ? asset('assets/front/img/popups/'.$popup->background_image) :asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                                </div>
+                                <input type="file" name="background_image" class="form-control image">
+                                <p class="mb-0 text-warning">Only JPG, JPEG, PNG image is allowed</p>
+                                <p id="errimage" class="mb-0 text-danger em"></p>
                             </div>
                             @endif
 
@@ -239,25 +225,4 @@
     </div>
 </div>
 
-<!-- Image LFM Modal -->
-<div class="modal fade lfm-modal" id="lfmModal1" tabindex="-1" role="dialog" aria-labelledby="lfmModalTitle" aria-hidden="true">
-    <i class="fas fa-times-circle"></i>
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-body p-0">
-                <iframe src="{{url('laravel-filemanager')}}?serial=1" style="width: 100%; height: 500px; overflow: hidden; border: none;"></iframe>
-            </div>
-        </div>
-    </div>
-</div><!-- Image LFM Modal -->
-<div class="modal fade lfm-modal" id="lfmModal2" tabindex="-1" role="dialog" aria-labelledby="lfmModalTitle" aria-hidden="true">
-    <i class="fas fa-times-circle"></i>
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-body p-0">
-                <iframe src="{{url('laravel-filemanager')}}?serial=2" style="width: 100%; height: 500px; overflow: hidden; border: none;"></iframe>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection

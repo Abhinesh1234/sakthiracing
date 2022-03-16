@@ -500,7 +500,6 @@
                             data.switchPage(op.icon);
                             data.bindEvents();
                         });
-                        //console.log($.fn.bsVersion());
                         $this.popover('show');
                     });
                 }

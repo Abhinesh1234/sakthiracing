@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @php
-$selLang = \App\Language::where('code', request()->input('language'))->first();
+$selLang = \App\Models\Language::where('code', request()->input('language'))->first();
 @endphp
 @if(!empty($selLang) && $selLang->rtl == 1)
 @section('styles')

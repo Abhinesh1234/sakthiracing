@@ -3,10 +3,10 @@
 @endif
 
 
-<p>{!! replaceBaseUrl($text) !!}</p>
+<p>@php echo replaceBaseUrl($text); @endphp</p>
 
 @if ($subsc)
-<p style="margin-botton: 0px;">Best Regards,</p>
+<p class="mb-0">Best Regards,</p>
 <p>{{$bs->website_title}}</p>
 @endif
 

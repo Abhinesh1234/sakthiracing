@@ -1,5 +1,4 @@
 @extends('admin.layout')
-
 @section('content')
   <div class="page-header">
     <h4 class="page-title">Roles</h4>

@@ -47,7 +47,7 @@
             <div class="card-title d-inline-block">Edit Feature</div>
             <a class="btn btn-info btn-sm float-right d-inline-block" href="{{route('admin.feature.index') . '?language=' . request()->input('language')}}">
 							<span class="btn-label">
-								<i class="fas fa-backward" style="font-size: 12px;"></i>
+								<i class="fas fa-backward"></i>
 							</span>
 							Back
 						</a>
@@ -81,15 +81,14 @@
                       <p class="mb-0 text-danger">{{$errors->first('title')}}</p>
                     @endif
                   </div>
-                  @if ($be->theme_version != 'car')
-                    <div class="form-group">
-                        <label>Color **</label>
-                        <input class="jscolor form-control ltr" name="color" value="{{$feature->color}}">
-                        @if ($errors->has('color'))
-                            <p class="mb-0 text-danger">{{$errors->first('color')}}</p>
-                        @endif
-                    </div>
-                  @endif
+                  <div class="form-group">
+                    <label for="">Text **</label>
+                    <input class="form-control" name="text" placeholder="Enter text" value="{{$feature->text}}">
+                    @if ($errors->has('text'))
+                      <p class="mb-0 text-danger">{{$errors->first('text')}}</p>
+                    @endif
+                  </div>
+
                   <div class="form-group">
                     <label for="">Serial Number **</label>
                     <input type="number" class="form-control ltr" name="serial_number" value="{{$feature->serial_number}}" placeholder="Enter Serial Number">
@@ -115,15 +114,4 @@
     </div>
   </div>
 
-@endsection
-
-
-@section('scripts')
-  <script>
-    $(document).ready(function() {
-      $('.icp').on('iconpickerSelected', function(event){
-        $("#inputIcon").val($(".iconpicker-component").find('i').attr('class'));
-      });
-    });
-  </script>
 @endsection

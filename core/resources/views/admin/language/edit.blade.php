@@ -30,7 +30,7 @@
           <div class="card-title d-inline-block">Edit Language</div>
           <a class="btn btn-info btn-sm float-right d-inline-block" href="{{route('admin.language.index')}}">
             <span class="btn-label">
-              <i class="fas fa-backward" style="font-size: 12px;"></i>
+              <i class="fas fa-backward"></i>
             </span>
             Back
           </a>
@@ -49,7 +49,7 @@
                 </div>
                 <div class="form-group">
                   <label for="">Code **</label>
-                  <input type="text" class="form-control" name="code" placeholder="Enter code" value="{{$language->code}}">
+                  <input readonly type="text" class="form-control" name="code" placeholder="Enter code" value="{{$language->code}}">
                   <p id="errcode" class="mb-0 text-danger em"></p>
                 </div>
                 <div class="form-group">

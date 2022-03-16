@@ -13,19 +13,7 @@
              <form id="ajaxForm" class="modal-form" action="{{route('admin.gateway.offline.store')}}" method="POST">
                 @csrf
                 <div class="row">
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                           <label for="">Language **</label>
-                           <select id="language" name="language_id" class="form-control">
-                              <option value="" selected disabled>Select a language</option>
-                              @foreach ($langs as $lang)
-                              <option value="{{$lang->id}}">{{$lang->name}}</option>
-                              @endforeach
-                           </select>
-                           <p id="errlanguage_id" class="mb-0 text-danger em"></p>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
+                    <div class="col-lg-12">
                         <div class="form-group">
                            <label for="">Name **</label>
                            <input type="text" class="form-control" name="name" placeholder="Enter name" value="">

@@ -26,12 +26,12 @@
   <div class="row">
     <div class="col-md-12">
       <div class="card">
-        <form id="socialForm" action="{{route('admin.social.update')}}" method="post" onsubmit="update(event)">
+        <form id="socialForm" action="{{route('admin.social.update')}}" method="post">
           <div class="card-header">
             <div class="card-title d-inline-block">Edit Social Link</div>
             <a class="btn btn-info btn-sm float-right d-inline-block" href="{{route('admin.social.index')}}">
 							<span class="btn-label">
-								<i class="fas fa-backward" style="font-size: 12px;"></i>
+								<i class="fas fa-backward"></i>
 							</span>
 							Back
 						</a>
@@ -93,15 +93,4 @@
     </div>
   </div>
 
-@endsection
-
-
-@section('scripts')
-  <script>
-    function update(e) {
-      e.preventDefault();
-      $("#inputIcon").val($(".iconpicker-component").find('i').attr('class'));
-      document.getElementById('socialForm').submit();
-    }
-  </script>
 @endsection

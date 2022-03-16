@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Language;
-use App\Popup;
+use Illuminate\Http\Request;
+use App\Models\Language;
+use App\Models\Popup;
 use Validator;
 use Session;
 
 class PopupController extends Controller
 {
     public function index(Request $request) {
+        $data['langs'] = Language::all();
         $lang = Language::where('code', $request->language)->first();
         $lang_id = $lang->id;
         $data['popups'] = Popup::where('language_id', $lang_id)->orderBy('id', 'DESC')->get();
+        $data['lang'] = $lang;
         return view('admin.popups.index', $data);
     }
 
@@ -29,6 +31,7 @@ class PopupController extends Controller
 
     public function edit($id) {
         $data['popup'] = Popup::findOrFail($id);
+        $data['language'] = Language::findOrFail($data['popup']->language_id);
         return view('admin.popups.edit', $data);
     }
 
@@ -48,30 +51,30 @@ class PopupController extends Controller
         ];
 
         if ($type == 1 || $type == 4 || $type == 5 || $type == 7) {
-            $image = $request->image;
-            $allowedExts = array('jpg', 'png', 'jpeg', 'svg');
-            $extImage = pathinfo($image, PATHINFO_EXTENSION);
+            $image = $request->file('image');
+            $allowedExts = array('jpg', 'png', 'jpeg');
 
             $rules['image'] = [
                 'required',
-                function ($attribute, $value, $fail) use ($extImage, $allowedExts) {
+                function ($attribute, $value, $fail) use ($image, $allowedExts) {
+                    $extImage = $image->getClientOriginalExtension();
                     if (!in_array($extImage, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, svg image is allowed");
+                        return $fail("Only png, jpg, jpeg image is allowed");
                     }
                 }
             ];
         }
 
         if ($type == 2 || $type == 3 || $type == 6) {
-            $background = $request->background_image;
-            $allowedBgExts = array('jpg', 'png', 'jpeg', 'svg');
-            $extBackground = pathinfo($background, PATHINFO_EXTENSION);
+            $background = $request->file('background_image');
+            $allowedBgExts = array('jpg', 'png', 'jpeg');
 
             $rules['background_image'] = [
                 'required',
-                function ($attribute, $value, $fail) use ($extBackground, $allowedBgExts) {
+                function ($attribute, $value, $fail) use ($background, $allowedBgExts) {
+                    $extBackground = $background->getClientOriginalExtension();
                     if (!in_array($extBackground, $allowedBgExts)) {
-                        return $fail("Only png, jpg, jpeg, svg image is allowed");
+                        return $fail("Only png, jpg, jpeg image is allowed");
                     }
                 }
             ];
@@ -109,7 +112,6 @@ class PopupController extends Controller
 
         $validator = Validator::make($request->all(), $rules, $messages);
         if ($validator->fails()) {
-            $errmsgs = $validator->getMessageBag()->add('error', 'true');
             return response()->json($validator->errors());
         }
 
@@ -121,26 +123,26 @@ class PopupController extends Controller
         $popup->type = $type;
 
         if ($type == 1 || $type == 4 || $type == 5 || $type == 7) {
-            if ($request->filled('image')) {
-                $filename = uniqid() .'.'. $extImage;
+            if ($request->hasFile('image')) {
+                $imageName = uniqid() .'.'. $image->getClientOriginalExtension();
 
                 $directory = 'assets/front/img/popups/';
                 @mkdir($directory, 0775, true);
-                @copy(str_replace(' ', '%20', $image), $directory . $filename);
+                $image->move($directory, $imageName);
 
-                $popup->image = $filename;
+                $popup->image = $imageName;
             }
         }
 
         if ($type == 2 || $type == 3 || $type == 6) {
-            if ($request->filled('background_image')) {
-                $filename = uniqid() .'.'. $extBackground;
+            if ($request->hasFile('background_image')) {
+                $backgroundName = uniqid() .'.'. $background->getClientOriginalExtension();
 
                 $directory = 'assets/front/img/popups/';
                 @mkdir($directory, 0775, true);
-                @copy(str_replace(' ', '%20', $background), $directory . $filename);
+                $background->move($directory, $backgroundName);
 
-                $popup->background_image = $filename;
+                $popup->background_image = $backgroundName;
             }
         }
 
@@ -189,15 +191,16 @@ class PopupController extends Controller
         ];
 
         if ($type == 1 || $type == 4 || $type == 5 || $type == 7) {
-            if ($request->filled('image')) {
+            if ($request->hasFile('image')) {
                 $image = $request->image;
-                $allowedExts = array('jpg', 'png', 'jpeg', 'svg');
-                $extImage = pathinfo($image, PATHINFO_EXTENSION);
+                $allowedExts = array('jpg', 'png', 'jpeg');
+                $image = $request->file('image');
 
                 $rules['image'] = [
-                    function ($attribute, $value, $fail) use ($extImage, $allowedExts) {
+                    function ($attribute, $value, $fail) use ($image, $allowedExts) {
+                        $extImage = $image->getClientOriginalExtension();
                         if (!in_array($extImage, $allowedExts)) {
-                            return $fail("Only png, jpg, jpeg, svg image is allowed");
+                            return $fail("Only png, jpg, jpeg image is allowed");
                         }
                     }
                 ];
@@ -205,15 +208,16 @@ class PopupController extends Controller
         }
 
         if ($type == 2 || $type == 3 || $type == 6) {
-            if ($request->filled('background_image')) {
+            if ($request->hasFile('background_image')) {
                 $background = $request->background_image;
-                $allowedBgExts = array('jpg', 'png', 'jpeg', 'svg');
-                $extBackground = pathinfo($background, PATHINFO_EXTENSION);
+                $allowedBgExts = array('jpg', 'png', 'jpeg');
+                $background = $request->file('background_image');
 
                 $rules['background_image'] = [
-                    function ($attribute, $value, $fail) use ($extBackground, $allowedBgExts) {
+                    function ($attribute, $value, $fail) use ($background, $allowedBgExts) {
+                        $extBackground = $background->getClientOriginalExtension();
                         if (!in_array($extBackground, $allowedBgExts)) {
-                            return $fail("Only png, jpg, jpeg, svg image is allowed");
+                            return $fail("Only png, jpg, jpeg image is allowed");
                         }
                     }
                 ];
@@ -262,30 +266,30 @@ class PopupController extends Controller
         $popup->delay = $request->delay;
 
         if ($type == 1 || $type == 4 || $type == 5 || $type == 7) {
-            if ($request->filled('image')) {
+            if ($request->hasFile('image')) {
                 @unlink('assets/front/img/popups/' . $popup->image);
 
-                $filename = uniqid() .'.'. $extImage;
+                $imageName = uniqid() .'.'. $image->getClientOriginalExtension();
 
                 $directory = 'assets/front/img/popups/';
                 @mkdir($directory, 0775, true);
-                @copy(str_replace(' ', '%20', $image), $directory . $filename);
+                $image->move($directory, $imageName);
 
-                $popup->image = $filename;
+                $popup->image = $imageName;
             }
         }
 
         if ($type == 2 || $type == 3 || $type == 6) {
-            if ($request->filled('background_image')) {
+            if ($request->hasFile('background_image')) {
                 @unlink('assets/front/img/popups/' . $popup->background_image);
 
-                $filename = uniqid() .'.'. $extBackground;
+                $backgroundName = uniqid() .'.'. $background->getClientOriginalExtension();
 
                 $directory = 'assets/front/img/popups/';
                 @mkdir($directory, 0775, true);
-                @copy(str_replace(' ', '%20', $background), $directory . $filename);
+                $background->move($directory, $backgroundName);
 
-                $popup->background_image = $filename;
+                $popup->background_image = $backgroundName;
             }
         }
 

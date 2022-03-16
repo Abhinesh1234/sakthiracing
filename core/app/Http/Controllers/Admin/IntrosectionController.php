@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\BasicExtended;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\BasicSetting as BS;
-use App\Language;
+use App\Models\BasicSetting as BS;
+use App\Models\Language;
+use Purifier;
 use Validator;
 use Session;
 
@@ -17,47 +17,54 @@ class IntrosectionController extends Controller
         $lang = Language::where('code', $request->language)->firstOrFail();
         $data['lang_id'] = $lang->id;
         $data['abs'] = $lang->basic_setting;
-        $data['abe'] = $lang->basic_extended;
-
         return view('admin.home.intro-section', $data);
     }
 
     public function update(Request $request, $langid)
     {
-        $image = $request->image;
-        $allowedExts = array('jpg', 'png', 'jpeg', 'svg');
-        $extImage = pathinfo($image, PATHINFO_EXTENSION);
 
-        $image2 = $request->image_2;
-        $extImage2 = pathinfo($image2, PATHINFO_EXTENSION);
+
+        $main_image = $request->file('intro_main_image');
+        $signature = $request->file('intro_signature');
+        $video_bg = $request->file('intro_video_image');
+
+        $allowedExts = array('jpg', 'png', 'jpeg');
 
         $rules = [
-            'intro_section_title' => 'required|max:25',
-            'intro_section_text' => 'required|max:80',
-            'intro_section_button_text' => 'nullable|max:15',
-            'intro_section_button_url' => 'nullable|max:255',
-            'intro_section_video_link' => 'nullable'
+            'intro_main_image' => [
+                function ($attribute, $value, $fail) use ($main_image, $allowedExts) {
+                    if (!empty($main_image)) {
+                        $ext = $main_image->getClientOriginalExtension();
+                        if (!in_array($ext, $allowedExts)) {
+                            return $fail("Only png, jpg, jpeg image is allowed");
+                        }
+                    }
+                },
+            ],
+
+            'intro_signature' => [
+                function ($attribute, $value, $fail) use ($signature, $allowedExts) {
+                    if (!empty($signature)) {
+                        $ext = $signature->getClientOriginalExtension();
+                        if (!in_array($ext, $allowedExts)) {
+                            return $fail("Only png, jpg, jpeg image is allowed");
+                        }
+                    }
+                },
+            ],
+
+            'intro_video_image' => [
+                function ($attribute, $value, $fail) use ($video_bg, $allowedExts) {
+                    if (!empty($video_bg)) {
+                        $ext = $video_bg->getClientOriginalExtension();
+                        if (!in_array($ext, $allowedExts)) {
+                            return $fail("Only png, jpg, jpeg image is allowed");
+                        }
+                    }
+                },
+            ],
+
         ];
-
-        if ($request->filled('image')) {
-            $rules['image'] = [
-                function ($attribute, $value, $fail) use ($extImage, $allowedExts) {
-                    if (!in_array($extImage, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, svg image is allowed");
-                    }
-                }
-            ];
-        }
-
-        if ($request->filled('image_2')) {
-            $rules['image_2'] = [
-                function ($attribute, $value, $fail) use ($extImage2, $allowedExts) {
-                    if (!in_array($extImage2, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, svg image is allowed");
-                    }
-                }
-            ];
-        }
 
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
@@ -65,38 +72,38 @@ class IntrosectionController extends Controller
             return response()->json($validator->errors());
         }
 
+        $input = $request->all();
+
         $bs = BS::where('language_id', $langid)->firstOrFail();
-        $bs->intro_section_title = $request->intro_section_title;
-        $bs->intro_section_text = $request->intro_section_text;
-        $bs->intro_section_button_text = $request->intro_section_button_text;
-        $bs->intro_section_button_url = $request->intro_section_button_url;
-        $videoLink = $request->intro_section_video_link;
-        if (strpos($videoLink, "&") != false) {
-            $videoLink = substr($videoLink, 0, strpos($videoLink, "&"));
-        }
-        $bs->intro_section_video_link = $videoLink;
 
-        if ($request->filled('image')) {
-            @unlink('assets/front/img/' . $bs->intro_bg);
-            $filename = uniqid() .'.'. $extImage;
-            @copy(str_replace(' ', '%20', $image), 'assets/front/img/' . $filename);
 
-            $bs->intro_bg = $filename;
+        if ($request->hasFile('intro_main_image')) {
+            @unlink('assets/front/img/' . $bs->intro_main_image);
+            $main_image_name = uniqid() .'.'. $main_image->getClientOriginalExtension();
+            $main_image->move('assets/front/img/', $main_image_name);
+            $input['intro_main_image'] = $main_image_name;
         }
 
-        $bs->save();
+        $input['intro_text'] = Purifier::clean($request->intro_text);
+        $bs->update($input);
 
-        $be = BasicExtended::where('language_id', $langid)->firstOrFail();
-        if ($request->filled('image_2')) {
-            @unlink('assets/front/img/' . $be->intro_bg2);
-            $filename = uniqid() .'.'. $extImage2;
-            @copy(str_replace(' ', '%20', $image2), 'assets/front/img/' . $filename);
+        Session::flash('success', 'data updated successfully!');
+        return "success";
+    }
 
-            $be->intro_bg2 = $filename;
+    public function removeImage(Request $request) {
+        $type = $request->type;
+        $langid = $request->language_id;
+
+        $bs = BS::where('language_id', $langid)->firstOrFail();
+
+        if ($type == "signature") {
+            @unlink("assets/front/img/" . $bs->intro_signature);
+            $bs->intro_signature = NULL;
+            $bs->save();
         }
-        $be->save();
 
-        Session::flash('success', 'Informations updated successfully!');
+        $request->session()->flash('success', 'Image removed successfully!');
         return "success";
     }
 }

@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @php
-$selLang = \App\Language::where('code', request()->input('language'))->first();
+$selLang = \App\Models\Language::where('code', request()->input('language'))->first();
 @endphp
 @if(!empty($selLang) && $selLang->rtl == 1)
 @section('styles')
@@ -74,7 +74,7 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
                 <h3 class="text-center">NO USEFUL LINK FOUND</h3>
               @else
                 <div class="table-responsive">
-                  <table class="table table-striped mt-3">
+                  <table class="table table-striped mt-3" id="basic-datatables">
                     <thead>
                       <tr>
                         <th scope="col">#</th>
@@ -87,7 +87,7 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
                       @foreach ($aulinks as $key => $aulink)
                         <tr>
                           <td>{{$loop->iteration}}</td>
-                          <td>{{convertUtf8($aulink->name)}}</td>
+                          <td>{{$aulink->name}}</td>
                           <td>{{$aulink->url}}</td>
                           <td>
                             <a class="btn btn-secondary btn-sm editbtn" href="#editModal" data-toggle="modal" data-ulink_id="{{$aulink->id}}" data-name="{{$aulink->name}}" data-url="{{$aulink->url}}">
@@ -197,45 +197,4 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
       </div>
     </div>
   </div>
-@endsection
-
-@section('scripts')
-<script>
-$(document).ready(function() {
-
-    // make input fields RTL
-    $("select[name='language_id']").on('change', function() {
-        $(".request-loader").addClass("show");
-        let url = "{{url('/')}}/admin/rtlcheck/" + $(this).val();
-        console.log(url);
-        $.get(url, function(data) {
-            $(".request-loader").removeClass("show");
-            if (data == 1) {
-                $("form.create input").each(function() {
-                    if (!$(this).hasClass('ltr')) {
-                        $(this).addClass('rtl');
-                    }
-                });
-                $("form.create select").each(function() {
-                    if (!$(this).hasClass('ltr')) {
-                        $(this).addClass('rtl');
-                    }
-                });
-                $("form.create textarea").each(function() {
-                    if (!$(this).hasClass('ltr')) {
-                        $(this).addClass('rtl');
-                    }
-                });
-                $("form.create .nicEdit-main").each(function() {
-                    $(this).addClass('rtl text-right');
-                });
-
-            } else {
-                $("form.create input, form.create select, form.create textarea").removeClass('rtl');
-                $("form.create .nicEdit-main").removeClass('rtl text-right');
-            }
-        })
-    });
-});
-</script>
 @endsection

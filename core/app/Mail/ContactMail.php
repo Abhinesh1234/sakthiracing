@@ -27,6 +27,7 @@ class ContactMail extends Mailable
         $this->subject = $subject;
         $this->text = $message;
         $this->subsc = $subsc;
+        
     }
 
     /**
@@ -36,6 +37,7 @@ class ContactMail extends Mailable
      */
     public function build()
     {
+        
         return $this->from($this->sender)
         ->subject($this->subject)
         ->view('mail.contact');

@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\BasicExtended;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
-use App\Subscriber;
-use App\BasicSetting;
+use App\Models\Subscriber;
+use App\Models\BasicSetting;
+use App\Models\BasicExtended;
 use App\Mail\ContactMail;
 use Session;
 use Mail;
@@ -17,11 +17,11 @@ use Mail;
 class SubscriberController extends Controller
 {
     public function index(Request $request) {
-        $term = $request->term;
-
+      $term = $request->term;
       $data['subscs'] = Subscriber::when($term, function ($query, $term) {
                             return $query->where('email', 'LIKE', '%' . $term . '%');
-                        })->orderBy('id', 'DESC')->paginate(5);
+                        })->orderBy('id', 'DESC')->paginate(10);
+
       return view('admin.subscribers.index', $data);
     }
 
@@ -30,11 +30,6 @@ class SubscriberController extends Controller
     }
 
     public function subscsendmail(Request $request) {
-        if(Subscriber::count() == 0) {
-            $request->session()->flash('warning', "No subscriber found!");
-            return back();
-        }
-
       $request->validate([
         'subject' => 'required',
         'message' => 'required'
@@ -55,7 +50,6 @@ class SubscriberController extends Controller
         if ($be->is_smtp == 1) {
             try {
                 //Server settings
-                // $mail->SMTPDebug = SMTP::DEBUG_SERVER;                      // Enable verbose debug output
                 $mail->isSMTP();                                            // Send using SMTP
                 $mail->Host       = $be->smtp_host;                    // Set the SMTP server to send through
                 $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
@@ -71,7 +65,6 @@ class SubscriberController extends Controller
                     $mail->addAddress($subsc->email);     // Add a recipient
                 }
             } catch (Exception $e) {
-                // die($e->getMessage());
             }
         } else {
             try {
@@ -82,7 +75,6 @@ class SubscriberController extends Controller
                     $mail->addAddress($subsc->email);     // Add a recipient
                 }
             } catch (Exception $e) {
-                // die($e->getMessage());
             }
         }
 
@@ -96,6 +88,7 @@ class SubscriberController extends Controller
       Session::flash('success', 'Mail sent successfully!');
       return back();
     }
+
 
     public function delete(Request $request)
     {

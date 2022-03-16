@@ -1,5 +1,21 @@
 @extends('admin.layout')
 
+@if(!empty($abe->language) && $abe->language->rtl == 1)
+@section('styles')
+<style>
+    form input,
+    form textarea,
+    form select {
+        direction: rtl;
+    }
+    form .note-editor.note-frame .note-editing-area .note-editable {
+        direction: rtl;
+        text-align: right;
+    }
+</style>
+@endsection
+@endif
+
 @section('content')
   <div class="page-header">
     <h4 class="page-title">Basic Informations</h4>
@@ -37,37 +53,56 @@
           </div>
           <div class="card-body pt-5 pb-5">
             <div class="row">
-              <div class="col-lg-8 offset-lg-2">
+              <div class="col-lg-6 offset-lg-3">
                 @csrf
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                          <label>Website Title **</label>
-                          <input class="form-control" name="website_title" value="{{$abs->website_title}}">
-                          @if ($errors->has('website_title'))
-                            <p class="mb-0 text-danger">{{$errors->first('website_title')}}</p>
-                          @endif
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="">Timezone</label>
-                            <select class="form-control select2" name="timezone">
-                                <option value="" selected disabled>Select a Timezone</option>
-                                @foreach ($timezones as $timezone)
-                                <option value="{{$timezone->timezone}}" {{$abx->timezone == $timezone->timezone ? 'selected' : ''}}>{{$timezone->timezone}}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
+                <div class="form-group">
+                  <h3 class="text-warning">Information</h3>
+                  <hr class="divider"><br>
+
+                  <label>Website Title **</label>
+                  <input class="form-control" name="website_title" value="{{$abs->website_title}}">
+                  @if ($errors->has('website_title'))
+                    <p class="mb-0 text-danger">{{$errors->first('website_title')}}</p>
+                  @endif
+                </div>
+                  <div class="form-group">
+                      <label>Timezone **</label>
+                      <select name="timezone" class="form-control select2">
+                          @foreach($timezones as $timezone)
+                              <option value="{{$timezone->timezone}}" {{$timezone->timezone == $abe->timezone ? "selected" : "" }}>{{$timezone->timezone}}</option>
+                          @endforeach
+                      </select>
+                      @if ($errors->has('timezone'))
+                          <p class="mb-0 text-danger">{{$errors->first('timezone')}}</p>
+                      @endif
+                  </div>
+
+                <div class="form-group">
+                  <br>
+                  <h3 class="text-warning">Website Appearance</h3>
+                  <hr class="divider"><br>
+
+                  <label>Base Color Code **</label>
+                  <input class="jscolor form-control ltr" name="base_color" value="{{$abs->base_color}}">
+                  @if ($errors->has('base_color'))
+                    <p class="mb-0 text-danger">{{$errors->first('base_color')}}</p>
+                  @endif
+
                 </div>
 
-
                 <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <br>
+                            <h3 class="text-warning">Currency Settings</h3>
+                            <hr class="divider">
+                        </div>
+                    </div>
                     <div class="col-lg-6">
                         <div class="form-group">
+
                             <label>Base Currency Symbol **</label>
-                            <input type="text" class="form-control ltr" name="base_currency_symbol" value="{{$abx->base_currency_symbol}}">
+                            <input type="text" class="form-control ltr" name="base_currency_symbol" value="{{$abe->base_currency_symbol}}">
                             @if ($errors->has('base_currency_symbol'))
                               <p class="mb-0 text-danger">{{$errors->first('base_currency_symbol')}}</p>
                             @endif
@@ -78,8 +113,8 @@
                         <div class="form-group">
                             <label>Base Currency Symbol Position **</label>
                             <select name="base_currency_symbol_position" class="form-control ltr">
-                                <option value="left" {{$abx->base_currency_symbol_position == 'left' ? 'selected' : ''}}>Left</option>
-                                <option value="right" {{$abx->base_currency_symbol_position == 'right' ? 'selected' : ''}}>Right</option>
+                                <option value="left" {{$abe->base_currency_symbol_position == 'left' ? 'selected' : ''}}>Left</option>
+                                <option value="right" {{$abe->base_currency_symbol_position == 'right' ? 'selected' : ''}}>Right</option>
                             </select>
                             @if ($errors->has('base_currency_symbol_position'))
                               <p class="mb-0 text-danger">{{$errors->first('base_currency_symbol_position')}}</p>
@@ -94,7 +129,7 @@
                     <div class="col-lg-4">
                         <div class="form-group">
                             <label>Base Currency Text **</label>
-                            <input type="text" class="form-control ltr" name="base_currency_text" value="{{$abx->base_currency_text}}">
+                            <input type="text" class="form-control ltr" name="base_currency_text" value="{{$abe->base_currency_text}}">
                             @if ($errors->has('base_currency_text'))
                               <p class="mb-0 text-danger">{{$errors->first('base_currency_text')}}</p>
                             @endif
@@ -104,8 +139,8 @@
                         <div class="form-group">
                             <label>Base Currency Text Position **</label>
                             <select name="base_currency_text_position" class="form-control ltr">
-                                <option value="left" {{$abx->base_currency_text_position == 'left' ? 'selected' : ''}}>Left</option>
-                                <option value="right" {{$abx->base_currency_text_position == 'right' ? 'selected' : ''}}>Right</option>
+                                <option value="left" {{$abe->base_currency_text_position == 'left' ? 'selected' : ''}}>Left</option>
+                                <option value="right" {{$abe->base_currency_text_position == 'right' ? 'selected' : ''}}>Right</option>
                             </select>
                             @if ($errors->has('base_currency_text_position'))
                               <p class="mb-0 text-danger">{{$errors->first('base_currency_text_position')}}</p>
@@ -119,9 +154,9 @@
                                 <div class="input-group-prepend">
                                   <span class="input-group-text">1 USD =</span>
                                 </div>
-                                <input type="text" name="base_currency_rate" class="form-control ltr" value="{{$abx->base_currency_rate}}">
+                                <input type="text" name="base_currency_rate" class="form-control ltr" value="{{$abe->base_currency_rate}}">
                                 <div class="input-group-append">
-                                  <span class="input-group-text">{{$abx->base_currency_text}}</span>
+                                  <span class="input-group-text">{{$abe->base_currency_text}}</span>
                                 </div>
                             </div>
 
@@ -131,81 +166,6 @@
                         </div>
                     </div>
                 </div>
-
-
-
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                          <label>Base Color Code **</label>
-                          <input class="jscolor form-control ltr" name="base_color" value="{{$abs->base_color}}">
-                          @if ($errors->has('base_color'))
-                            <p class="mb-0 text-danger">{{$errors->first('base_color')}}</p>
-                          @endif
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-
-                        @if ($abe->theme_version != 'dark' && $abe->theme_version != 'gym' && $abe->theme_version != 'car' && $abe->theme_version != 'construction' && $abe->theme_version != 'lawyer')
-                            <div class="form-group">
-                                <label>Secondary Base Color Code **</label>
-                                <input class="jscolor form-control ltr" name="secondary_base_color" value="{{$abs->secondary_base_color}}">
-                                @if ($errors->has('secondary_base_color'))
-                                    <p class="mb-0 text-danger">{{$errors->first('secondary_base_color')}}</p>
-                                @endif
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-
-                @if ($abe->theme_version != 'cleaning' && $abe->theme_version != 'logistic')
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label>Hero Area Overlay Color Code **</label>
-                            <input class="jscolor form-control ltr" name="hero_area_overlay_color" value="{{$abe->hero_overlay_color}}">
-                            @if ($errors->has('hero_area_overlay_color'))
-                            <p class="mb-0 text-danger">{{$errors->first('hero_area_overlay_color')}}</p>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label>Hero Area Overlay Opacity **</label>
-                            <input type="text" class="form-control ltr" name="hero_area_overlay_opacity" value="{{$abe->hero_overlay_opacity}}">
-                            <p class="text-warning mb-0">Opacity can be between 0 to 1.</p>
-                            @if ($errors->has('hero_area_overlay_opacity'))
-                            <p class="mb-0 text-danger">{{$errors->first('hero_area_overlay_opacity')}}</p>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-                @endif
-
-
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label>Breadcrumb Area Overlay Color Code **</label>
-                            <input class="jscolor form-control ltr" name="breadcrumb_area_overlay_color" value="{{$abe->breadcrumb_overlay_color}}">
-                            @if ($errors->has('breadcrumb_area_overlay_color'))
-                              <p class="mb-0 text-danger">{{$errors->first('breadcrumb_area_overlay_color')}}</p>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label>Breadcrumb Area Overlay Opacity **</label>
-                            <input type="text" class="form-control ltr" name="breadcrumb_area_overlay_opacity" value="{{$abe->breadcrumb_overlay_opacity}}">
-                            <p class="text-warning mb-0">Opacity can be between 0 to 1.</p>
-                            @if ($errors->has('breadcrumb_area_overlay_opacity'))
-                              <p class="mb-0 text-danger">{{$errors->first('breadcrumb_area_overlay_opacity')}}</p>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
               </div>
             </div>
           </div>

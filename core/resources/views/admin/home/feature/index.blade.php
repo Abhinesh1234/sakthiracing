@@ -54,7 +54,7 @@
                 <h3 class="text-center">NO FEATURE FOUND</h3>
               @else
                 <div class="table-responsive">
-                  <table class="table table-striped mt-3">
+                  <table class="table table-striped mt-3" id="basic-datatables">
                     <thead>
                       <tr>
                         <th scope="col">#</th>
@@ -69,7 +69,7 @@
                         <tr>
                           <td>{{$loop->iteration}}</td>
                           <td><i class="{{ $feature->icon }}"></i></td>
-                          <td>{{convertUtf8($feature->title)}}</td>
+                          <td>{{$feature->title}}</td>
                           <td>{{$feature->serial_number}}</td>
                           <td>
                             <a class="btn btn-secondary btn-sm" href="{{route('admin.feature.edit', $feature->id) . '?language=' . request()->input('language')}}">
@@ -150,13 +150,12 @@
               <input class="form-control" name="title" placeholder="Enter title">
               <p id="errtitle" class="mb-0 text-danger em"></p>
             </div>
-            @if ($be->theme_version != 'car')
-                <div class="form-group">
-                    <label>Color **</label>
-                    <input class="jscolor form-control ltr" name="color" value="">
-                    <p id="errcolor" class="mb-0 text-danger em"></p>
-                </div>
-            @endif
+            <div class="form-group">
+              <label for="">Text **</label>
+              <textarea class="form-control" name="text" placeholder="Enter text" rows="5"></textarea>
+              <p id="errtext" class="mb-0 text-danger em"></p>
+            </div>
+
             <div class="form-group">
               <label for="">Serial Number **</label>
               <input type="number" class="form-control ltr" name="serial_number" value="" placeholder="Enter Serial Number">
@@ -173,50 +172,4 @@
     </div>
   </div>
 
-@endsection
-
-@section('scripts')
-  <script>
-    $(document).ready(function() {
-        $('.icp').on('iconpickerSelected', function(event){
-            $("#inputIcon").val($(".iconpicker-component").find('i').attr('class'));
-        });
-
-        // make input fields RTL
-        $("select[name='language_id']").on('change', function() {
-
-            $(".request-loader").addClass("show");
-            let url = "{{url('/')}}/admin/rtlcheck/" + $(this).val();
-            console.log(url);
-            $.get(url, function(data) {
-                $(".request-loader").removeClass("show");
-                if (data == 1) {
-                    $("form input").each(function() {
-                        if (!$(this).hasClass('ltr')) {
-                            $(this).addClass('rtl');
-                        }
-                    });
-                    $("form select").each(function() {
-                        if (!$(this).hasClass('ltr')) {
-                            $(this).addClass('rtl');
-                        }
-                    });
-                    $("form textarea").each(function() {
-                        if (!$(this).hasClass('ltr')) {
-                            $(this).addClass('rtl');
-                        }
-                    });
-                    $("form .nicEdit-main").each(function() {
-                        $(this).addClass('rtl text-right');
-                    });
-
-                } else {
-                    $("form input, form select, form textarea").removeClass('rtl');
-                    $("form .nicEdit-main").removeClass('rtl text-right');
-                }
-            })
-        });
-
-    });
-  </script>
 @endsection

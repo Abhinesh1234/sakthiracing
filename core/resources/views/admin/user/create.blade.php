@@ -3,35 +3,27 @@
   <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLongTitle">Create User</h5>
+        <h5 class="modal-title" id="exampleModalLongTitle">Create Admin</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-
         <form id="ajaxForm" class="" action="{{route('admin.user.store')}}" method="POST">
           @csrf
-          {{-- Image Part --}}
-          <div class="form-group">
-              <label for="">Image ** </label>
-              <br>
-              <div class="thumb-preview" id="thumbPreview1">
-                  <img src="{{asset('assets/admin/img/noimage.jpg')}}" alt="User Image">
+          
+          <div class="row">
+            <div class="col-lg-6">
+              <div class="form-group">
+                  <label for="image"><strong>Featured Image **</strong></label>
+                <div class="col-md-12 showImage mb-3">
+                  <img src="{{asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                </div>
+                <input type="file" name="image" id="image" class="form-control image">
+                <p id="errimage" class="mb-0 text-danger em"></p>
               </div>
-              <br>
-              <br>
-
-
-              <input id="fileInput1" type="hidden" name="image">
-              <button id="chooseImage1" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal1">Choose Image</button>
-
-
-              <p class="text-warning mb-0">JPG, PNG, JPEG, SVG images are allowed</p>
-              <p class="em text-danger mb-0" id="errimage"></p>
-
+            </div>
           </div>
-
 
           <div class="row">
             <div class="col-lg-6">
@@ -88,13 +80,13 @@
             <div class="col-lg-12">
               <div class="form-group">
                 <label for="">Role **</label>
-                <select class="form-control" name="role">
+                <select class="form-control" name="role_id">
                   <option value="" selected disabled>Select a Role</option>
                   @foreach ($roles as $key => $role)
                   <option value="{{$role->id}}">{{$role->name}}</option>
                   @endforeach
                 </select>
-                <p id="errrole" class="mb-0 text-danger em"></p>
+                <p id="errrole_id" class="mb-0 text-danger em"></p>
               </div>
             </div>
           </div>

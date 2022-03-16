@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Payment;
 
-use App\BasicExtra;
-use App\Http\Controllers\Payment\PaymentController;
+use App\Http\Controllers\Front\CheckoutController;
+use App\Http\Controllers\User\UserCheckoutController;
+use App\Http\Helpers\UserPermissionHelper;
 use Illuminate\Http\Request;
-use App\Language;
-use App\Package;
-use App\PackageOrder;
-use App\PaymentGateway;
-use App\Subscription;
+use App\Http\Controllers\Controller;
+use App\Http\Helpers\MegaMailer;
+use App\Models\Language;
+use App\Models\Package;
+use App\Models\PaymentGateway;
+use Carbon\Carbon;
 use Razorpay\Api\Api;
-use Session;
+use Illuminate\Support\Facades\Session;
 
-
-class RazorpayController extends PaymentController
+class RazorpayController extends Controller
 {
     public function __construct()
     {
@@ -26,65 +27,23 @@ class RazorpayController extends PaymentController
     }
 
 
-    public function store(Request $request)
+    public function paymentProcess(Request $request, $_amount, $_item_number, $_cancel_url, $_success_url, $_title, $_description, $bs, $bex)
     {
-        // Validation Starts
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-
-        $bex = $currentLang->basic_extra;
-        $be = $currentLang->basic_extended;
-        $bs = $currentLang->basic_setting;
-        $package_inputs = $currentLang->package_inputs;
-
-        if ($bex->base_currency_text != "INR") {
-            return redirect()->back()->with('error', __('Please Select INR Currency For This Payment.'));
-        }
-
-        $nda = $request->file('nda');
-
-        $validation = $this->orderValidation($request, $package_inputs);
-        if($validation) {
-            return $validation;
-        }
-
-        // save order to database
-        $po = $this->saveOrder($request, $package_inputs, 0);
-        $package = Package::findOrFail($request->package_id);
-
-
-        $order['title'] = $package->title . " Order";
-        $order['item_number'] = str_random(4) . time();
-        $order['item_amount'] = $package->price;
-        $order['package_id'] = $package->id;
-        $order['order_id'] = $po->id;
-        $cancel_url = route('front.payment.cancle', $package->id);
-        $notify_url = route('front.razorpay.notify');
-
+        $cancel_url = $_cancel_url;
+        $notify_url = $_success_url;
 
         $orderData = [
-            'receipt'         => $order['title'],
-            'amount'          => $order['item_amount'] * 100,
-            'currency'        => 'INR',
+            'receipt' => $_title,
+            'amount' => $_amount * 100,
+            'currency' => 'INR',
             'payment_capture' => 1 // auto capture
         ];
 
         $razorpayOrder = $this->api->order->create($orderData);
-
-        Session::put('order_data', $order);
+        Session::put('request', $request->all());
         Session::put('order_payment_id', $razorpayOrder['id']);
 
-        $displayAmount = $amount = $orderData['amount'];
-
-        if ($bex->base_currency_text !== 'INR') {
-            $url = "https://api.fixer.io/latest?symbols=$bex->base_currency_text&base=INR";
-            $exchange = json_decode(file_get_contents($url), true);
-
-            $displayAmount = $exchange['rates'][$bex->base_currency_text] * $amount / 100;
-        }
+        $displayAmount = $amount = $_amount;
 
         $checkout = 'automatic';
 
@@ -93,28 +52,28 @@ class RazorpayController extends PaymentController
         }
 
         $data = [
-            "key"               => $this->keyId,
-            "amount"            => $amount,
-            "name"              => $order['title'],
-            "description"       => $order['title'],
-            "prefill"           => [
-                "name"              => $request->name,
-                "email"             => $request->email,
-                "contact"           => $request->razorpay_phone,
+            "key" => $this->keyId,
+            "amount" => $_amount,
+            "name" => $_title,
+            "description" => $_description,
+            "prefill" => [
+                "name" => $request->name,
+                "email" => $request->address,
+                "contact" => $request->razorpay_phone,
             ],
-            "notes"             => [
-                "address"           => $request->razorpay_address,
-                "merchant_order_id" => $order['item_number'],
+            "notes" => [
+                "address" => $request->razorpay_address,
+                "merchant_order_id" => $_item_number,
             ],
-            "theme"             => [
-                "color"             => "{{$bs->base_color}}"
+            "theme" => [
+                "color" => "{{$bs->base_color}}"
             ],
-            "order_id"          => $razorpayOrder['id'],
+            "order_id" => $razorpayOrder['id'],
         ];
 
         if ($bex->base_currency_text !== 'INR') {
-            $data['display_currency']  = $bex->base_currency_text;
-            $data['display_amount']    = $displayAmount;
+            $data['display_currency'] = $bex->base_currency_text;
+            $data['display_amount'] = $displayAmount;
         }
 
         $json = json_encode($data);
@@ -123,34 +82,26 @@ class RazorpayController extends PaymentController
         return view('front.razorpay', compact('data', 'displayCurrency', 'json', 'notify_url'));
     }
 
-    public function notify(Request $request)
+    public function successPayment(Request $request)
     {
+        $requestData = Session::get('request');
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
         } else {
             $currentLang = Language::where('is_default', 1)->first();
         }
-
         $be = $currentLang->basic_extended;
-
-        $order_data = Session::get('order_data');
-        $packageid = $order_data["package_id"];
-        $orderid = $order_data["order_id"];
-        $success_url = route('front.packageorder.confirmation', [$packageid, $orderid]);
-        $cancel_url = route('front.payment.cancle', $packageid);
-        $input_data = $request->all();
+        $bs = $currentLang->basic_setting;
         /** Get the payment ID before session clear **/
         $payment_id = Session::get('order_payment_id');
-
         $success = true;
-
-        if (empty($input_data['razorpay_payment_id']) === false) {
+        if (empty($request['razorpay_payment_id']) === false) {
 
             try {
                 $attributes = array(
                     'razorpay_order_id' => $payment_id,
-                    'razorpay_payment_id' => $input_data['razorpay_payment_id'],
-                    'razorpay_signature' => $input_data['razorpay_signature']
+                    'razorpay_payment_id' => $request['razorpay_payment_id'],
+                    'razorpay_signature' => $request['razorpay_signature']
                 );
 
                 $this->api->utility->verifyPaymentSignature($attributes);
@@ -160,28 +111,94 @@ class RazorpayController extends PaymentController
         }
 
         if ($success === true) {
+            $package = Package::find($requestData['package_id']);
+            $paymentFor = Session::get('paymentFor');
+            $transaction_id = UserPermissionHelper::uniqidReal(8);
+            $transaction_details = json_encode($request);
+            if ($paymentFor == "membership") {
+                $amount = $requestData['price'];
+                $password = $requestData['password'];
+                $checkout = new CheckoutController();
+                $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount,$be,$password);
 
-            $bex = BasicExtra::first();
+                $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
+                $activation = Carbon::parse($lastMemb->start_date);
+                $expire = Carbon::parse($lastMemb->expire_date);
+                $file_name = $this->makeInvoice($requestData,"membership",$user,$password,$amount,"Razorpay",$requestData['phone'],$be->base_currency_symbol_position,$be->base_currency_symbol,$be->base_currency_text,$transaction_id,$package->title);
 
-            if ($bex->recurring_billing == 1) {
-                $sub = Subscription::find($orderid);
-                $package = Package::find($packageid);
-                $po = $this->subFinalize($sub, $package);
-            } else {
-                $po = PackageOrder::findOrFail($orderid);
-                $po->payment_status = 1;
-                $po->save();
+                $mailer = new MegaMailer();
+                $data = [
+                    'toMail' => $user->email,
+                    'toName' => $user->fname,
+                    'username' => $user->username,
+                    'package_title' => $package->title,
+                    'package_price' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $package->price . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
+                    'activation_date' => $activation->toFormattedDateString(),
+                    'expire_date' => Carbon::parse($expire->toFormattedDateString())->format('Y') == '9999' ? 'Lifetime' : $expire->toFormattedDateString(),
+                    'membership_invoice' => $file_name,
+                    'website_title' => $bs->website_title,
+                    'templateType' => 'registration_with_premium_package',
+                    'type' => 'registrationWithPremiumPackage'
+                ];
+                $mailer->mailFromAdmin($data);
+
+                session()->flash('success', __('successful_payment'));
+                Session::forget('request');
+                Session::forget('paymentFor');
+                return redirect()->route('success.page');
+            } elseif ($paymentFor == "extend") {
+                $amount = $requestData['price'];
+                $password = uniqid('qrcode');
+                $checkout = new UserCheckoutController();
+                $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount,$be,$password);
+
+
+                $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
+                $activation = Carbon::parse($lastMemb->start_date);
+                $expire = Carbon::parse($lastMemb->expire_date);
+                $file_name = $this->makeInvoice($requestData,"extend",$user,$password,$amount,$requestData["payment_method"],$user->phone_number,$be->base_currency_symbol_position,$be->base_currency_symbol,$be->base_currency_text,$transaction_id,$package->title);
+
+                $mailer = new MegaMailer();
+                $data = [
+                    'toMail' => $user->email,
+                    'toName' => $user->fname,
+                    'username' => $user->username,
+                    'package_title' => $package->title,
+                    'package_price' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $package->price . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
+                    'activation_date' => $activation->toFormattedDateString(),
+                    'expire_date' => Carbon::parse($expire->toFormattedDateString())->format('Y') == '9999' ? 'Lifetime' : $expire->toFormattedDateString(),
+                    'membership_invoice' => $file_name,
+                    'website_title' => $bs->website_title,
+                    'templateType' => 'membership_extend',
+                    'type' => 'membershipExtend'
+                ];
+                $mailer->mailFromAdmin($data);
+
+                session()->flash('success', __('successful_payment'));
+                Session::forget('request');
+                Session::forget('paymentFor');
+                return redirect()->route('success.page');
             }
 
-
-            // sending mails
-            $this->sendMails($po, $be, $bex);
-
-
-            Session::forget('order_data');
-
-            return redirect($success_url);
         }
-        return redirect($cancel_url);
+        $paymentFor = Session::get('paymentFor');
+        session()->flash('warning', __('cancel_payment'));
+        if($paymentFor == "membership"){
+            return redirect()->route('front.register.view',['status' => $requestData['package_type'],'id' => $requestData['package_id']])->withInput($requestData);
+        }else{
+            return redirect()->route('user.plan.extend.checkout',['package_id' => $requestData['package_id']])->withInput($requestData);
+        }
+    }
+
+    public function cancelPayment()
+    {
+        $requestData = Session::get('request');
+        $paymentFor = Session::get('paymentFor');
+        session()->flash('warning', __('cancel_payment'));
+        if($paymentFor == "membership"){
+            return redirect()->route('front.register.view',['status' => $requestData['package_type'],'id' => $requestData['package_id']])->withInput($requestData);
+        }else{
+            return redirect()->route('user.plan.extend.checkout',['package_id' => $requestData['package_id']])->withInput($requestData);
+        }
     }
 }

@@ -48,7 +48,7 @@
           <div class="card-title d-inline-block">Edit Partner</div>
           <a class="btn btn-info btn-sm float-right d-inline-block" href="{{route('admin.partner.index') . '?language=' . request()->input('language')}}">
             <span class="btn-label">
-              <i class="fas fa-backward" style="font-size: 12px;"></i>
+              <i class="fas fa-backward"></i>
             </span>
             Back
           </a>
@@ -56,41 +56,23 @@
         <div class="card-body pt-5 pb-5">
           <div class="row">
             <div class="col-lg-6 offset-lg-3">
-
               <form id="ajaxForm" class="" action="{{route('admin.partner.update')}}" method="post">
                 @csrf
                 <input type="hidden" name="partner_id" value="{{$partner->id}}">
-
-                {{-- Image Part --}}
-                <div class="form-group">
-                    <label for="">Image ** </label>
-                    <br>
-                    <div class="thumb-preview" id="thumbPreview1">
-                        <img src="{{asset('assets/front/img/partners/'.$partner->image)}}" alt="User Image">
-                    </div>
-                    <br>
-                    <br>
-
-
-                    <input id="fileInput1" type="hidden" name="image">
-                    <button id="chooseImage1" class="choose-image btn btn-primary" type="button" data-multiple="false" data-toggle="modal" data-target="#lfmModal1">Choose Image</button>
-
-
-                    <p class="text-warning mb-0">JPG, PNG, JPEG, SVG images are allowed</p>
-                    <p class="em text-danger mb-0" id="errimage"></p>
-
-                    <!-- Image LFM Modal -->
-                    <div class="modal fade lfm-modal" id="lfmModal1" tabindex="-1" role="dialog" aria-labelledby="lfmModalTitle" aria-hidden="true">
-                        <i class="fas fa-times-circle"></i>
-                        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                            <div class="modal-content">
-                                <div class="modal-body p-0">
-                                    <iframe src="{{url('laravel-filemanager')}}?serial=1" style="width: 100%; height: 500px; overflow: hidden; border: none;"></iframe>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                  <div class="row">
+                      <div class="col-lg-12">
+                          <div class="form-group">
+                              <div class="col-12 mb-2">
+                                  <label for="image"><strong>Image*</strong></label>
+                              </div>
+                              <div class="col-md-12 showImage mb-3">
+                                  <img src="{{$partner->image ? asset('assets/front/img/partners/'.$partner->image) : asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                              </div>
+                              <input type="file" name="image" id="image" class="form-control">
+                              <p id="errimage" class="mb-0 text-danger em"></p>
+                          </div>
+                      </div>
+                  </div>
                 <div class="form-group">
                   <label for="">URL **</label>
                   <input type="text" class="form-control ltr" name="url" value="{{$partner->url}}" placeholder="Enter URL of social media account">

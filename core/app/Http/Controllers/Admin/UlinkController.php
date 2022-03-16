@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Language;
-use App\Ulink;
+use App\Models\Language;
+use App\Models\Ulink;
 use Validator;
 use Session;
 

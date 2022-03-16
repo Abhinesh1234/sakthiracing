@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @php
-$selLang = \App\Language::where('code', request()->input('language'))->first();
+$selLang = \App\Models\Language::where('code', request()->input('language'))->first();
 @endphp
 @if(!empty($selLang) && $selLang->rtl == 1)
 @section('styles')
@@ -72,7 +72,7 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
           <div class="row">
             <div class="col-lg-12">
               @if (count($apages) == 0)
-                <h2 class="text-center">NO LINK ADDED</h2>
+                <h2 class="text-center">NO PAGE ADDED</h2>
               @else
                 <div class="table-responsive">
                   <table class="table table-striped mt-3" id="basic-datatables">
@@ -82,8 +82,9 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
                             <input type="checkbox" class="bulk-check" data-val="all">
                         </th>
                         <th scope="col">Name</th>
+                        <th scope="col">URL</th>
+                        <th scope="col">Title</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Serial Number</th>
                         <th scope="col">Actions</th>
                       </tr>
                     </thead>
@@ -93,7 +94,9 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
                           <td>
                             <input type="checkbox" class="bulk-check" data-val="{{$apage->id}}">
                           </td>
-                          <td>{!! convertUtf8($apage->name) !!}</td>
+                          <td>{{ $apage->name }}</td>
+                          <td width="20%"><a href="{{ route('front.dynamicPage', $apage->slug) }}" target="_blank">{{ route('front.dynamicPage', $apage->slug) }}</a></td>
+                          <td>{{$apage->title}}</td>
                           <td>
                             @if ($apage->status == 1)
                               <span class="badge badge-success">Active</span>
@@ -101,31 +104,15 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
                               <span class="badge badge-danger">Deactive</span>
                             @endif
                           </td>
-                          <td>{{$apage->serial_number}}</td>
                           <td>
                             <a class="btn btn-secondary btn-sm" href="{{route('admin.page.edit', $apage->id) . '?language=' . request()->input('language')}}">
-                                <span class="btn-label">
-                                <i class="fas fa-edit"></i>
-                                </span>
-                                Edit
+                              <i class="fas fa-edit"></i>
                             </a>
-                            @if ($bex->custom_page_pagebuilder == 1)
-
-                                <a class="btn btn-secondary btn-sm" href="{{route('admin.pagebuilder.content', ['id' => $apage->id, 'language' => $apage->language->code, 'type' => 'page'])}}" target="_blank">
-                                    <span class="btn-label">
-                                        <i class="fas fa-edit"></i>
-                                    </span>
-                                    Content
-                                </a>
-                            @endif
                             <form class="d-inline-block deleteform" action="{{route('admin.page.delete')}}" method="post">
                               @csrf
                               <input type="hidden" name="pageid" value="{{$apage->id}}">
                               <button type="submit" class="btn btn-danger btn-sm deletebtn">
-                                <span class="btn-label">
-                                  <i class="fas fa-trash"></i>
-                                </span>
-                                Delete
+                                <i class="fas fa-trash"></i>
                               </button>
                             </form>
                           </td>

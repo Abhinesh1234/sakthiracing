@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Social;
+use App\Models\Social;
 use Session;
 
 class SocialController extends Controller

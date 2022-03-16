@@ -26,7 +26,7 @@
   <div class="row">
     <div class="col-md-12">
       <div class="card">
-        <form id="socialForm" action="{{route('admin.social.store')}}" method="post" onsubmit="store(event)">
+        <form id="socialForm" action="{{route('admin.social.store')}}" method="post">
           <div class="card-header">
             <div class="card-title">Add Social Link</div>
           </div>
@@ -142,15 +142,4 @@
     </div>
   </div>
 
-@endsection
-
-
-@section('scripts')
-  <script>
-    function store(e) {
-      e.preventDefault();
-      $("#inputIcon").val($(".iconpicker-component").find('i').attr('class'));
-      document.getElementById('socialForm').submit();
-    }
-  </script>
 @endsection

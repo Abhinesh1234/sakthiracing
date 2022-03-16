@@ -68,6 +68,30 @@
                     @endif
                 </div>
 
+                @php
+                    $parsedUrl = parse_url(url()->current());
+                    $host =  $parsedUrl['host'];
+                @endphp
+                <div class="form-group {{ $errors->has('website_host') ? ' has-error ' : '' }}">
+                    <label for="website_host">
+                        {{ trans('installer_messages.environment.wizard.form.website_host_label') }}
+                    </label>
+                    <input type="text" name="website_host" id="website_host" value="{{$host}}" placeholder="{{ trans('installer_messages.environment.wizard.form.website_host_placeholder') }}" />
+                    <p style="color: #ff3737;">** If you give incorrect website host, then 404 error will be shown throughout the whole website</p>
+                    @if ($errors->has('website_host'))
+                        <span class="error-block">
+                            <i class="fa fa-fw fa-exclamation-triangle" aria-hidden="true"></i>
+                            {{ $errors->first('website_host') }}
+                        </span>
+                    @endif
+                </div>
+                <div class="alert alert-warning">
+                    <ul style="margin-bottom: 0px;">
+                        <li>if your website URL is <code style="color: #ff3737;">https://example.com/</code> , then host will be <code style="color: #ff3737;">emaple.com</code></li>
+                        <li>if your website URL is <code style="color: #ff3737;">https://subdomain.example.com/</code> , then host will be <code style="color: #ff3737;">subdomain.example.com</code></li>
+                    </ul>
+                </div>
+
 
                 <div class="form-group {{ $errors->has('database_hostname') ? ' has-error ' : '' }}">
                     <label for="database_hostname">

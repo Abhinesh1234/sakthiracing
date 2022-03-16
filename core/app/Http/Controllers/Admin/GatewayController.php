@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Language;
-use App\OfflineGateway;
-use App\PaymentGateway;
+use App\Models\Language;
+use App\Models\OfflineGateway;
+use App\Models\PaymentGateway;
 use Illuminate\Support\Facades\Session;
 use Validator;
 
@@ -22,7 +22,7 @@ class GatewayController extends Controller
         $data['mollie'] = PaymentGateway::find(17);
         $data['razorpay'] = PaymentGateway::find(9);
         $data['mercadopago'] = PaymentGateway::find(19);
-        $data['payumoney'] = PaymentGateway::find(18);
+        $data['anet'] = PaymentGateway::find(20);
 
         return view('admin.gateways.index', $data);
     }
@@ -87,6 +87,7 @@ class GatewayController extends Controller
         $paytm->status = $request->status;
 
         $information = [];
+        $information['environment'] = $request->environment;
         $information['merchant'] = $request->merchant;
         $information['secret'] = $request->secret;
         $information['website'] = $request->website;
@@ -96,6 +97,7 @@ class GatewayController extends Controller
         $paytm->information = json_encode($information);
 
         $paytm->save();
+
 
         $request->session()->flash('success', "Paytm informations updated successfully!");
 
@@ -178,6 +180,26 @@ class GatewayController extends Controller
         return back();
     }
 
+    public function anetUpdate(Request $request) {
+        $anet = PaymentGateway::find(20);
+        $anet->status = $request->status;
+
+        $information = [];
+        $information['login_id'] = $request->login_id;
+        $information['transaction_key'] = $request->transaction_key;
+        $information['public_key'] = $request->public_key;
+        $information['sandbox_check'] = $request->sandbox_check;
+        $information['text'] = "Pay via your Authorize.net account.";
+
+        $anet->information = json_encode($information);
+
+        $anet->save();
+
+        $request->session()->flash('success', "Authorize.net informations updated successfully!");
+
+        return back();
+    }
+
     public function mercadopagoUpdate(Request $request) {
         $mercadopago = PaymentGateway::find(19);
         $mercadopago->status = $request->status;
@@ -197,60 +219,28 @@ class GatewayController extends Controller
 
     }
 
-    public function payumoneyUpdate(Request $request) {
-        $payumoney = PaymentGateway::find(18);
-        $payumoney->status = $request->status;
-
-        $information = [];
-        $information['key'] = $request->key;
-        $information['salt'] = $request->salt;
-        $information['text'] = "Pay via your PayUmoney account.";
-        $information['sandbox_check'] = $request->sandbox_check;
-
-        $payumoney->information = json_encode($information);
-
-        $payumoney->save();
-
-        $arr = ['INDIPAY_MERCHANT_KEY' => $request->key,'INDIPAY_SALT' => $request->salt];
-        setEnvironmentValue($arr);
-        \Artisan::call('config:clear');
-
-        $request->session()->flash('success', "PayUmoney informations updated successfully!");
-
-        return back();
-    }
-
     public function offline(Request $request) {
-        $lang = Language::where('code', $request->language)->first();
-
-        $lang_id = $lang->id;
-        $data['ogateways'] = OfflineGateway::where('language_id', $lang_id)->orderBy('id', 'DESC')->paginate(10);
-        $data['lang_id'] = $lang_id;
+        $data['ogateways'] = OfflineGateway::orderBy('id', 'DESC')->get();
 
         return view('admin.gateways.offline.index', $data);
     }
 
     public function store(Request $request) {
-        $messages = [
-            'language_id.required' => 'The language field is required',
-        ];
 
         $rules = [
-            'language_id' => 'required',
             'name' => 'required|max:100',
             'short_description' => 'nullable',
             'serial_number' => 'required|integer',
             'is_receipt' => 'required',
         ];
 
-        $validator = Validator::make($request->all(), $rules, $messages);
+        $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             $errmsgs = $validator->getMessageBag()->add('error', 'true');
             return response()->json($validator->errors());
         }
 
         $in = $request->all();
-        $in['instructions'] = str_replace(url('/') . '/assets/front/img/', "{base_url}/assets/front/img/", $request->instructions);
 
         OfflineGateway::create($in);
 
@@ -273,7 +263,6 @@ class GatewayController extends Controller
         }
 
         $in = $request->except('_token', 'ogateway_id');
-        $in['instructions'] = str_replace(url('/') . '/assets/front/img/', "{base_url}/assets/front/img/", $request->instructions);
 
         OfflineGateway::where('id', $request->ogateway_id)->update($in);
 
@@ -284,21 +273,7 @@ class GatewayController extends Controller
     public function status(Request $request)
     {
         $og = OfflineGateway::find($request->ogateway_id);
-        if (!empty($request->type) && $request->type == 'product') {
-            $og->product_checkout_status = $request->product_checkout_status;
-        }
-        elseif (!empty($request->type) && $request->type == 'package') {
-            $og->package_order_status = $request->package_order_status;
-        }
-        elseif (!empty($request->type) && $request->type == 'course') {
-            $og->course_checkout_status = $request->course_checkout_status;
-        }
-        elseif (!empty($request->type) && $request->type == 'donation') {
-            $og->donation_checkout_status = $request->donation_checkout_status;
-        }
-        elseif (!empty($request->type) && $request->type == 'event') {
-            $og->event_checkout_status = $request->event_checkout_status;
-        }
+        $og->status = $request->status;
         $og->save();
 
         Session::flash('success', 'Gateway status changed successfully!');

@@ -2,36 +2,31 @@
 
 namespace App\Jobs;
 
-use App\Http\Helpers\KreativMailer;
+use App\Http\Helpers\MegaMailer;
 use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Carbon\Carbon;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 
 class SubscriptionExpiredMail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $user;
     public $bs;
-    public $email;
-    public $name;
-    public $package;
-    public $edate;
+    public $be;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($bs, $email, $name, $package, $edate)
+    public function __construct($user, $bs, $be)
     {
+        $this->user = $user;
         $this->bs = $bs;
-        $this->email = $email;
-        $this->name = $name;
-        $this->edate = $edate;
-        $this->package = $package->title;
+        $this->be = $be;
     }
 
     /**
@@ -41,27 +36,17 @@ class SubscriptionExpiredMail implements ShouldQueue
      */
     public function handle()
     {
-        $email = $this->email;
-        $name = $this->name;
-        $package = $this->package;
-        $edate = $this->edate;
-        $bs = $this->bs;
 
-        // Send Mail to Buyer
-        $mailer = new KreativMailer;
+        $mailer = new MegaMailer();
         $data = [
-            'toMail' => $email,
-            'toName' => $name,
-            'customer_name' => $name,
-            'packages_link' => route('front.packages'),
-            'expired_package' => $package,
-            'expire_date' => Carbon::parse($edate)->toFormattedDateString(),
-            'website_title' => $bs->website_title,
-            'templateType' => 'subscription_expired',
-            'type' => 'subscriptionExpired'
+            'toMail' => $this->user->email,
+            'toName' => $this->user->first_name,
+            'username' => $this->user->username,
+            'login_link' => "<a href='" . route('user.login') . "'>" . route('user.login') . "</a>",
+            'website_title' => $this->bs->website_title,
+            'templateType' => 'membership_expired',
+            'type' => 'membershipExpired'
         ];
-
         $mailer->mailFromAdmin($data);
-
     }
 }

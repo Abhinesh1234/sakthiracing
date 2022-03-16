@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\BasicExtended;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Language;
-use App\Feature;
+use App\Models\Language;
+use App\Models\Feature;
 use Validator;
 use Session;
 
@@ -30,12 +29,6 @@ class FeatureController extends Controller
 
     public function store(Request $request)
     {
-        $count = Feature::where('language_id', $request->language_id)->count();
-        if ($count == 4) {
-            Session::flash('warning', 'You cannot add more than 4 features!');
-            return "success";
-        }
-
         $messages = [
             'language_id.required' => 'The language field is required'
         ];
@@ -44,14 +37,9 @@ class FeatureController extends Controller
             'language_id' => 'required',
             'icon' => 'required',
             'title' => 'required|max:50',
-            'color' => 'required',
+            'text' => 'required|max:255',
             'serial_number' => 'required|integer',
         ];
-
-        $be = BasicExtended::select('theme_version')->first();
-        if ($be->theme_version == 'car') {
-            $rules['color'] = 'nullable';
-        }
 
         $validator = Validator::make($request->all(), $rules, $messages);
         if ($validator->fails()) {
@@ -63,11 +51,7 @@ class FeatureController extends Controller
         $feature->icon = $request->icon;
         $feature->language_id = $request->language_id;
         $feature->title = $request->title;
-
-        if ($be->theme_version != 'car') {
-            $feature->color = $request->color;
-        }
-
+        $feature->text = $request->text;
         $feature->serial_number = $request->serial_number;
         $feature->save();
 
@@ -80,25 +64,16 @@ class FeatureController extends Controller
         $rules = [
             'icon' => 'required',
             'title' => 'required|max:50',
-            'color' => 'required',
+            'text' => 'required|max:255',
             'serial_number' => 'required|integer',
         ];
-
-        $be = BasicExtended::select('theme_version')->first();
-        if ($be->theme_version == 'car') {
-            $rules['color'] = 'nullable';
-        }
 
         $request->validate($rules);
 
         $feature = Feature::findOrFail($request->feature_id);
         $feature->icon = $request->icon;
         $feature->title = $request->title;
-
-        if ($be->theme_version != 'car') {
-            $feature->color = $request->color;
-        }
-
+        $feature->text = $request->text;
         $feature->serial_number = $request->serial_number;
         $feature->save();
 

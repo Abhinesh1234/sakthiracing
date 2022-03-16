@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @php
-$selLang = \App\Language::where('code', request()->input('language'))->first();
+$selLang = \App\Models\Language::where('code', request()->input('language'))->first();
 @endphp
 @if(!empty($selLang) && $selLang->rtl == 1)
 @section('styles')
@@ -40,7 +40,7 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
   <div class="row">
     <div class="col-md-12">
       <div class="card">
-        <form class="mb-3 dm-uploader drag-and-drop-zone" enctype="multipart/form-data" action="{{route('admin.contact.update', $lang_id)}}" method="POST">
+        <form   enctype="multipart/form-data" action="{{route('admin.contact.update', $lang_id)}}" method="POST">
             <div class="card-header">
                 <div class="row">
                     <div class="col-lg-10">
@@ -62,70 +62,51 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
             <div class="row">
               <div class="col-lg-6 offset-lg-3">
                 @csrf
+              
                 <div class="form-group">
                   <label>Form Title **</label>
-                  <input class="form-control" name="contact_form_title" value="{{$abs->contact_form_title}}" placeholder="Enter Titlte">
+                  <input class="form-control" name="contact_form_title" value="{{$abs->contact_form_title}}" placeholder="Enter form Titlte">
                   @if ($errors->has('contact_form_title'))
                     <p class="mb-0 text-danger">{{$errors->first('contact_form_title')}}</p>
                   @endif
                 </div>
                 <div class="form-group">
-                  <label>Form Subtitle **</label>
-                  <input class="form-control" name="contact_form_subtitle" value="{{$abs->contact_form_subtitle}}" placeholder="Enter Subtitlte">
-                  @if ($errors->has('contact_form_subtitle'))
-                    <p class="mb-0 text-danger">{{$errors->first('contact_form_subtitle')}}</p>
+                  <label>Information Title **</label>
+                  <input class="form-control" name="contact_info_title" value="{{$abs->contact_info_title}}" placeholder="Enter Information Titlte">
+                  @if ($errors->has('contact_info_title'))
+                    <p class="mb-0 text-danger">{{$errors->first('contact_info_title')}}</p>
                   @endif
                 </div>
-
+               
                 <div class="form-group">
                   <label>Address **</label>
-                  <textarea class="form-control" name="contact_addresses" rows="3">{{$abex->contact_addresses}}</textarea>
-                  <p class="mb-0 text-warning">Use newline to seperate multiple addresses.</p>
+                  <textarea class="form-control" name="contact_addresses" rows="4" placeholder="Enter Address">{{$abe->contact_addresses}}</textarea>
+                  <div class="text-warning">Use newline to seperate multiple addresses.</div>
                   @if ($errors->has('contact_addresses'))
                     <p class="mb-0 text-danger">{{$errors->first('contact_addresses')}}</p>
                   @endif
                 </div>
+                <div class="form-group">
+                  <label>Contact Information Text **</label>
+                  <input class="form-control" name="contact_text" value="{{$abs->contact_text}}" placeholder="Enter Information text">
+                  @if ($errors->has('contact_text'))
+                    <p class="mb-0 text-danger">{{$errors->first('contact_text')}}</p>
+                  @endif
+                </div>
 
+               
                 <div class="form-group">
                   <label>Phone **</label>
-                  <input class="form-control" name="contact_numbers" data-role="tagsinput" value="{{$abex->contact_numbers}}" placeholder="Enter Phone Number">
-                  <p class="mb-0 text-warning">Use comma (,) to seperate multiple contact numbers.</p>
+                  <input class="form-control" data-role="tagsinput" name="contact_numbers" value="{{$abe->contact_numbers}}" placeholder="Enter Phone Number">
+                  <div class="text-warning">Use comma (,) to add multiple Phone Numbers</div>
                   @if ($errors->has('contact_numbers'))
                     <p class="mb-0 text-danger">{{$errors->first('contact_numbers')}}</p>
                   @endif
                 </div>
-
                 <div class="form-group">
                   <label>Email **</label>
-                  <input class="form-control ltr" name="contact_mails" data-role="tagsinput" value="{{$abex->contact_mails}}" placeholder="Enter Email Address">
-                  <p class="mb-0 text-warning">Use comma (,) to seperate multiple contact mails.</p>
-                  @if ($errors->has('contact_mails'))
-                    <p class="mb-0 text-danger">{{$errors->first('contact_mails')}}</p>
-                  @endif
-                </div>
-
-                <div class="form-group">
-                  <label>Latitude </label>
-                  <input class="form-control" name="latitude" value="{{$abex->latitude}}" placeholder="Enter Google Map Address">
-                  @if ($errors->has('latitude'))
-                    <p class="mb-0 text-danger">{{$errors->first('latitude')}}</p>
-                  @endif
-                </div>
-
-                <div class="form-group">
-                  <label>Longitude</label>
-                  <input class="form-control" name="longitude" value="{{$abex->longitude}}" placeholder="Enter Google Map Address">
-                  @if ($errors->has('longitude'))
-                    <p class="mb-0 text-danger">{{$errors->first('longitude')}}</p>
-                  @endif
-                </div>
-
-                <div class="form-group">
-                  <label>Map Zoom</label>
-                  <input class="form-control" name="map_zoom" value="{{$abex->map_zoom}}" placeholder="Enter Google Map Address">
-                  @if ($errors->has('map_zoom'))
-                    <p class="mb-0 text-danger">{{$errors->first('map_zoom')}}</p>
-                  @endif
+                  <input class="form-control ltr" data-role="tagsinput"  name="contact_mails" value="{{$abe->contact_mails}}" placeholder="Enter Email Addresses">
+                  <div class="text-warning">Use comma (,) to add multiple Email Addresses</div>
                 </div>
 
               </div>
@@ -145,12 +126,4 @@ $selLang = \App\Language::where('code', request()->input('language'))->first();
     </div>
   </div>
 
-@endsection
-
-@section('scripts')
-    <script>
-        $(document).ready(function() {
-            $("input[name='contact_addresses']").tagsinput({ delimiter: '|' });
-        });
-    </script>
 @endsection

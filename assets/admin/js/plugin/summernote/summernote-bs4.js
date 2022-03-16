@@ -276,7 +276,7 @@ external_root_jQuery_commonjs2_jquery_commonjs_jquery_amd_jquery_default.a.exten
       videoLink: 'Video Link',
       insert: 'Insert Video',
       url: 'Video URL',
-      providers: '(YouTube, Vimeo, Vine, Instagram, DailyMotion or Youku)'
+      providers: '(YouTube, Vimeo)'
     },
     link: {
       link: 'Link',
@@ -7363,7 +7363,7 @@ function () {
               }).render());
             });
             $dropdown.find('input[type=color]').each(function (idx, item) {
-              external_root_jQuery_commonjs2_jquery_commonjs_jquery_amd_jquery_default()(item).change(function () {
+              external_root_jQuery_commonjs2_jquery_commonjs_jquery_amd_jquery_default()(item).on('change',function () {
                 var $chip = $dropdown.find('#' + external_root_jQuery_commonjs2_jquery_commonjs_jquery_amd_jquery_default()(this).data('event')).find('.note-color-btn').first();
                 var color = this.value.toUpperCase();
                 $chip.css('background-color', color).attr('aria-label', color).attr('data-value', color).attr('data-original-title', color);
@@ -8672,7 +8672,7 @@ function () {
             $imageUrl.trigger('focus');
           }
 
-          $imageBtn.click(function (event) {
+          $imageBtn.on('click', function (event) {
             event.preventDefault();
             deferred.resolve($imageUrl.val());
           });
@@ -9077,7 +9077,7 @@ function () {
             $videoUrl.trigger('focus');
           }
 
-          $videoBtn.click(function (event) {
+          $videoBtn.on('click', function (event) {
             event.preventDefault();
             deferred.resolve($videoUrl.val());
           });

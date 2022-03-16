@@ -1,22 +1,27 @@
-@extends("front.$version.layout")
+@extends('front.layout')
 
 @section('pagename')
- - {{convertUtf8($page->name)}}
+- {{$page->name}}
 @endsection
 
-@section('meta-keywords', "$page->meta_keywords")
-@section('meta-description', "$page->meta_description")
+@section('meta-description', !empty($page) ? $page->meta_keywords : '')
+@section('meta-keywords', !empty($page) ? $page->meta_description : '')
 
-@section('breadcrumb-title', convertUtf8($page->title))
-@section('breadcrumb-subtitle', convertUtf8($page->subtitle))
-@section('breadcrumb-link', convertUtf8($page->name))
+@section('breadcrumb-title')
+{{$page->title}}
+@endsection
+@section('breadcrumb-link')
+    {{$page->name}}
+@endsection
 
 @section('content')
-    <style>
-        {!! replaceBaseUrl($page->css) !!}
-    </style>
 
-    <div class="pagebuilder-content">
-        {!! convertHtml($page->html) !!}
-    </div>
+    <!--====== Start faqs-section ======-->
+    <section class="faqs-section pt-120 pb-80">
+        <div class="container">
+            <div class="summernote-content">
+                {!! replaceBaseUrl($page->body) !!}
+            </div>
+        </div>
+    </section><!--====== End faqs-section ======-->
 @endsection
